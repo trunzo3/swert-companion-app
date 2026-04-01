@@ -1,0 +1,482 @@
+# SWERT Workshop Companion App — Functional Spec
+
+**Project:** IQmeetEQ Workshop Companion
+**Author:** Anthony Trunzo / IQmeetEQ
+**Version:** 1.1
+**Date:** April 1, 2026
+
+---
+
+## 1. What This App Is
+
+A web-based interactive workbook for a two-day AI literacy and change leadership workshop. It replaces the printed workbook entirely. Participants use it during the live session as their guide, reference, and note-taking tool — then keep it as a persistent reference after the workshop ends.
+
+The app also serves as a post-workshop reinforcement tool and an organic pathway to further consulting and training.
+
+**Build in:** Replit
+**Target devices:** Laptop primary, tablet/phone secondary. Must be responsive.
+**Target audience:** ~40 California county HHS managers per cohort. Not deeply technical. The app must feel simple and immediate.
+
+---
+
+## 2. Users and Roles
+
+### Participant
+- Enters email (double-entry with match check + basic format validation: must contain @ and a valid domain extension)
+- No password, no email verification, no account creation flow
+- Email is the persistent identity — returning users enter their email and see their saved data
+- Can view unlocked sections, enter notes, build workflow maps, submit feedback
+- Can see locked Tier 2 and Tier 3 section titles but cannot access content
+
+### Admin (Anthony)
+- Access via a hidden icon in the app footer (e.g., the IQmeetEQ logo or a small gear icon) — looks decorative to participants, Anthony knows to tap it
+- Tapping the hidden icon reveals a password field
+- No visible "Admin" link anywhere in the participant-facing UI
+- Can view all participants: email, last login, which sections they've opened, whether they've entered notes or built a workflow map (but cannot read participant notes — that would feel surveillance-y)
+- Can create, change, and deactivate section codes
+- Can assign codes to cohorts (e.g., April 2026 group vs. June 2026 group)
+- Can update reference content, add depth-hint quotes, and eventually add Tier 2 and Tier 3 content without rebuilding the app
+
+---
+
+## 3. Authentication Flow
+
+1. User arrives at app URL
+2. Screen: "Enter your email to get started" — single input field
+3. Screen: "Confirm your email" — second input field
+4. System checks: do the two entries match? Is the format valid (contains @ and .something)?
+5. If mismatch: inline error "Emails don't match — try again"
+6. If invalid format: inline error "Please enter a valid email address"
+7. If valid: user enters the app. If email already exists, load their saved data. If new, create a fresh participant record.
+8. No logout required. Closing the browser ends the session. Re-entering email on return restores their data.
+
+---
+
+## 4. Navigation and Section Code System
+
+### During the workshop (live session)
+- When a participant first enters the app, they see a welcome screen with basic instructions and the workshop title/branding
+- Content sections are **locked by default** and display only their title and a brief one-line description
+- The facilitator announces a section code verbally (e.g., "enter VERIFY to open the next section")
+- A persistent "Enter Code" field is accessible from the main navigation at all times
+- When a valid code is entered, the corresponding section unlocks and opens immediately
+- Once unlocked, a section stays unlocked permanently for that user
+- Codes are case-insensitive
+
+### After the workshop
+- All Tier 1 sections that were unlocked during the session remain accessible
+- The participant can navigate freely between all unlocked sections
+- Tier 2 and Tier 3 sections remain visible (title and one-line description only) but locked
+
+### Suggested section codes (admin can change these)
+These are suggestions — the admin can set any code for any section:
+
+**Day 1:**
+- VERIFY → Verification Test
+- SAFARI → Tool Safari
+- RICECO → The RICECO Framework + Draft with RICECO
+- PEER → LLM Peer Review
+- DISTILL → Distill
+- PREPARE → Prepare
+- SYNTHESIZE → Synthesize
+- POWER → Power Follow-Ups
+- AIREF → What AI Is / Is Not + Persistent Context
+- SAFETY → Red / Yellow / Green
+- CAPSTONE → Capstone — Your 6 Ways in Action
+- TONIGHT → Overnight Assignment + 6 Ways Worksheet
+
+**Day 2:**
+- HARVEST → Overnight Harvest — Workflow Ideas
+- WORKFLOW → Map Your Workflow (Workflow Configurator)
+- CHANGE → Status Quo Bias + County Change Framework + Build Your County Change Message
+
+---
+
+## 5. Content Sections — Tier 1 (Fully Built)
+
+Each section below must include all reference content from the current workbook plus a notes field. Sections are labeled as either EXERCISE or REFERENCE. Exercise sections have interactive elements. Reference sections are read-only with notes.
+
+### Day 1 — Capability
+
+**"Can I use this effectively and safely?"**
+
+#### 5.1 Verification Test (EXERCISE)
+- **Goal:** "Catch the errors AI makes — before they catch you."
+- **Steps:** (1) Open your AI tool — link to headandheartca.com/verify. (2) Paste the prompt block and run it. (3) Compare to the "Correct Information" key.
+- **Quick Challenge:** "If you finish early, try a second model. Do the results differ?"
+- **Notes fields:** "My Observations" (free text), "Did my AI catch the errors?" (free text), "What does this tell me about trust?" (free text)
+- **Key Insight box:** "AI doesn't know when it's wrong. Confident delivery is not the same as accurate content. Your judgment is the quality control layer — not the model's."
+
+#### 5.2 Tool Safari (EXERCISE)
+- **Goal:** "Explore multiple AI tools hands-on. Know which tool fits which task."
+- **Steps:** (1) Pair up — one driver, one navigator. Switch roles halfway. (2) Follow the Safari Guide — run the prompts assigned to your table. (3) Table Synthesis — prepare for report-out.
+- **Worksheet selector:** The section contains multiple Safari worksheets, each named by the tool it covers (e.g., "ChatGPT," "Claude," "Gemini," "NotebookLM," "Perplexity" — admin can configure the exact names and number). Displayed as labeled tabs or buttons at the top of the section. Tapping a tab reveals that worksheet's content inline. Only one worksheet is visible at a time. The shared instructions and steps appear above the tabs and are always visible.
+- **Per-worksheet notes fields:** "What surprised me" (free text), "What worked well" (free text), "What didn't work" (free text). Notes are saved per worksheet — each tool gets its own notes.
+- **Shared notes field (below tabs):** "My table's top insight for report-out" (free text)
+
+#### 5.3 The RICECO Framework (REFERENCE)
+- **Goal:** "Six ingredients for prompts that produce usable output the first time."
+- **Content:** Full RICECO table:
+  - R — Role: "You are a [profession]..." Tells the model how to think.
+  - I — Instruction: The core task. What exactly do you want it to do?
+  - C — Context: Background information. Audience, situation, documents.
+  - E — Examples: "Your output will look like this..." Patterns to match.
+  - C — Constraints: "Do not..." Limits on length, tone, what to avoid.
+  - O — Output: "Present it in [format]..." Table, bullets, prose, one-pager.
+- **80% Shortcut box:** "You don't need all six every time. For most daily tasks, I + C + C — Instruction, Context, Constraints — gets you 80% of the way there."
+- **Practice prompt builder:** Labeled fields for R, I, C, E, C, O (each a free-text input)
+- **Notes field**
+
+#### 5.4 Draft with RICECO (EXERCISE)
+- **Goal:** "Use your 6 Ways worksheet task to create a real first draft."
+- **Steps:** (1) Pick your task from 6 Ways worksheet. (2) Build your RICECO prompt — start with I+C+C minimum. (3) Run it and note what you got.
+- **Notes fields:** "My task" (free text), "Which of the 6 Ways?" (free text), "My RICECO prompt elements" (labeled R/I/C/E/C/O fields), "My first reaction to the output" (free text), "What I'd change" (free text)
+
+#### 5.5 LLM Peer Review (EXERCISE)
+- **Goal:** "Use a second AI to check the first one's work. Build the verification habit."
+- **Steps:** (1) Draft — stay in Model A. (2) Critique — open Model B, paste scaffold prompt, ask for critique only. (3) Respond — share critique with Model A, ask it to revise.
+- **Critique scaffold prompt:** Display the scaffold text from the workbook
+- **Notes fields:** "Model A used" (free text), "Model B used" (free text), "Key feedback from Model B" (free text), "Changes I made after revision" (free text), "Did the models disagree? How?" (free text)
+- **Key Insight box:** "Different models catch different errors and carry different biases. Using them to check each other is a structural safeguard — not just a best practice."
+
+#### 5.6 Distill (EXERCISE)
+- **Goal:** "Turn something complex into something clear — policy to plain language, long to short."
+- **RICECO Scaffold displayed:** R: Plain-language specialist for CA county gov. I: Summarize key requirements into plain language. C: Audience is frontline staff, no policy background. C: No jargon, no passive voice, under 300 words. O: Numbered list, one sentence per requirement.
+- **Notes fields:** "Document I used" (free text), "How I adjusted the scaffold" (free text), "What the output got right" (free text), "What I had to verify or fix" (free text), general notes
+
+#### 5.7 Prepare (EXERCISE)
+- **Goal:** "Get ready for a high-stakes conversation before it happens — not after."
+- **RICECO Scaffold displayed:** R: Experienced HR and management coach for public sector leaders. I: Help me prepare for a difficult conversation — key points, questions, likely objections. C: [Describe scenario]. C: Keep tone constructive, don't assume bad intent. O: Three sections — key points, questions, likely objections + responses.
+- **Notes fields:** "The scenario I used" (free text), "Most useful output" (free text), "Objections AI surfaced that I hadn't thought of" (free text), "Where the output fell short or felt off" (free text)
+- **Power Move box:** "Don't just ask for objections. Ask for the strongest case against you: 'Steelman the opposing side. Give me their best argument against me.'"
+- **Depth hint (embedded quote):** *"Preparing for conversations is critical, and knowing how to meet your report with what they need at the right time is the change maker."*
+
+#### 5.8 Synthesize (EXERCISE)
+- **Goal:** "Find patterns across multiple documents that would take hours to read manually."
+- **Steps:** (1) Gather 2-3 inputs — public documents only. (2) Run the scaffold — start a fresh chat. (3) Review patterns.
+- **RICECO Scaffold displayed:** R: Professional analyst for CA county HHS. I: Give me the patterns and themes across these documents. C: Attached documents [describe briefly]. C: Don't summarize separately — cross-cutting themes only. O: Bulleted list, one sentence per theme.
+- **Notes fields:** "Documents I used" (free text), "Themes / patterns identified" (free text), "What surprised me" (free text), "What the AI missed" (free text)
+
+#### 5.9 Power Follow-Ups (REFERENCE)
+- **Goal:** "Nine moves to refine, pressure-test, and reshape AI output until it's actually ready to use."
+- **Content:** Display all nine as a grid or card layout:
+  - Simplify — "Explain this like I'm 15."
+  - Sticky — "Give me an analogy for this."
+  - Test — "What if [X] were different?"
+  - Push — "What's missing in your response?"
+  - Flip — "Make the strongest case against this."
+  - Rank — "Rank these by impact and tell me why."
+  - Ground — "Give me a specific example I could use Monday."
+  - Tone — "Rewrite this for [audience]."
+  - Format — "Turn this into a [table / checklist / one-pager]."
+- **Key Principle box:** "The first response is raw material, not a final product. Every follow-up is an editing decision. You are the editor-in-chief — the AI is your first draft writer."
+- **Notes fields:** "Follow-ups I used today" (free text), "Which ones worked best for me?" (free text)
+
+#### 5.10 What AI Is / Is Not (REFERENCE)
+- **Core Concept:** "Pattern matching, not thinking. The same process produces correct answers and hallucinations."
+- **Content — It IS:** Probabilistic (always guessing), Pattern Matching at Scale (reproduces patterns including being wrong), A Confident Communicator (delivers false info with same confidence as true)
+- **Content — It Is NOT:** Thinking or Knowing (prediction, not reasoning), Sentient or Caring (performs empathy by pattern matching), A Reliable Fact Database (generates plausible text, doesn't look things up)
+- **Always Verify These Areas:** Facts & Citations (often fabricated), Math (can fail without warning), Self-Knowledge (unreliable about own capabilities), Current Events (requires live web search)
+- **Understanding AI — The Nested Relationship (supplementary visual):** Embedded diagram showing the nested layers: Artificial Intelligence (outermost) → Machine Learning → Large Language Models → Generative AI Tools (innermost). Include the key insight: "All GenAI tools are LLMs, all LLMs use ML, and all ML is AI — but not all AI is GenAI." Include example callouts for each layer:
+  - AI: Fraud detection, facial recognition, spam filters, voice assistants
+  - ML: Netflix recommendations, Spotify playlists, Google search ranking, Grammarly
+  - LLM: GPT-4, Claude, Gemini, text generation, code completion, document analysis
+  - GenAI Tools: ChatGPT, Claude, Gemini, Perplexity, NotebookLM, Copilot, Canva AI
+- **Notes field**
+
+#### 5.11 Persistent Context (REFERENCE)
+- **Core Concept:** "Stop re-explaining yourself. Move from one-off chats to persistent, reusable workflows."
+- **Content:** Table with four levels:
+  - L1: Custom Instructions (Global) — default role/tone/format for every chat
+  - L2: Projects / Spaces (Topic-Based) — keeps docs and history together across sessions
+  - L3: Custom GPTs (Action-Based) — reusable mini-apps for recurring tasks
+  - RAG: NotebookLM (Source-Based) — answers only from your docs, with citations
+- **Key Insight box:** "When stakes are high — policy work, board memos, compliance documentation — use RAG (NotebookLM) for highest accuracy with citations you can verify."
+- **Notes fields:** "The persistent context tool I'll set up first" (free text), general notes
+
+#### 5.12 Red / Yellow / Green (EXERCISE)
+- **Goal:** "Build shared judgment about what's safe, context-dependent, and risky to do with AI at work."
+- **Steps:** (1) Hold your cards — for each scenario, hold up your gut reaction. (2) Discuss disagreements — when the room splits, that's the real conversation.
+- **Notes area:** Three columns — "Relatively Safe" (free text), "It Depends" (free text), "Risky" (free text)
+- **Notes field:** "The condition that moves something from yellow to green for me" (free text)
+- **Depth hint (embedded quote):** *"Individual judgment about what's safe is one thing. Organizational judgment — building shared standards across a team — is the real leadership skill."*
+
+#### 5.13 Capstone — Your 6 Ways in Action (EXERCISE)
+- **Goal:** "Build a complete, AI-assisted work product on a real task. Full cycle: prompt, run, verify, revise."
+- **Steps:** (1) Pick a real task — genuine work, not invented scenarios. (2) Prime & Prompt — use RICECO, set up persistent context if building something reusable. (3) Draft → Verify → Revise — run the LLM Council, apply Power Follow-Ups.
+- **Level Up tip:** "Build inside a Project, Custom GPT, or NotebookLM so you can reopen it Monday."
+- **Notes fields:** "My real task" (free text), "Which of the 6 Ways?" (checkboxes: Draft, Brainstorm, Prepare, Synthesize, Distill, Critique), "Persistent context tool used" (free text), "How I verified the output" (free text), "What I built" (free text), "What surprised me about the process" (free text)
+- **Depth hint (embedded quote):** *"Building something once is a skill. Building something you can reuse and hand to your team is a system."*
+
+#### 5.14 Overnight Assignment (REFERENCE)
+- **Tonight:** "Use what you built on one safe task. Come to Day 2 ready to report."
+- **The Ask box:** "Don't try to use AI for everything tonight. Pick one task — the one from today that felt most promising — and actually use your AI workspace on it before tomorrow."
+- **Think About Your Workflows prompts:** "Where do you spend time on something a machine could draft first?" / "Where do you repeat the same process weekly or monthly?" / "Where does your team bottleneck waiting on someone to write, summarize, or translate?"
+- **Notes fields:** "Where did AI help tonight?" (free text), "Where was judgment or checking still required?" (free text), "What would need to be true for me or my team to use this routinely?" (free text)
+
+#### 5.15 6 Ways to Use AI — Worksheet (REFERENCE)
+- **Instructions:** "For each use case, write one task you do regularly that AI could help with."
+- **Content:** Table with six rows:
+  - DRAFT — Create something new (email, report, talking points, agenda). Example: Write an email to supervisors explaining new ACL training requirements.
+  - BRAINSTORM — Generate options or ideas. Example: I'm developing a training on XYZ — what should I think through?
+  - PREPARE — Get ready for a conversation. Example: Help me prepare for a difficult conversation about a performance issue.
+  - SYNTHESIZE — Find patterns across sources. Example: Identify common themes across these three staff survey responses.
+  - DISTILL — Make complex things clear. Example: What are the key points in this 50-page state directive?
+  - CRITIQUE — Evaluate and find weaknesses. Example: Review my draft budget narrative — what's missing or unclear?
+- **Each row has:** a free-text input field for the participant's own task
+- **Footer note:** "And there are many more."
+
+---
+
+### Day 2 — Change Leadership
+
+**"How do I lead this in my organization?"**
+
+#### 5.16 Overnight Harvest — Workflow Ideas (EXERCISE)
+- **Goal:** "Surface what you learned last night and find the workflow worth mapping today."
+- **Steps:** (1) Report out — share overnight experience at your table. (2) Find the pattern — listen for recurring workflow types.
+- **Notes fields:** "My overnight report" with three sub-fields: "Where it helped" (free text), "Where judgment was still required" (free text), "What routine use would need" (free text). Also: "Workflow candidates from my table" (free text), "The one I'll map today" (free text)
+
+#### 5.17 Map Your Workflow — WORKFLOW CONFIGURATOR (EXERCISE — FLAGSHIP INTERACTIVE TOOL)
+- **Goal:** "Produce a one-page, deployable workflow document — AI insertion points, human verification, and stop conditions."
+- **This is the app's most important interactive feature.** It must be more than a notes field — it's a structured, editable tool the participant will return to and iterate on after the workshop.
+- **Structure:**
+  - **Header fields:** Workflow Name (text input), Frequency (text input)
+  - **Two-column layout:**
+    - Left column: "Today — How It Works" — ordered list of steps (participants can add/remove/reorder steps)
+    - Right column: "With AI — Redesigned" — ordered list of steps (participants can add/remove/reorder steps)
+  - **Footer fields:** "Human verification checkpoints" (free text), "Stop conditions (when NOT to use AI)" (free text)
+- **Participants should be able to create multiple workflow maps** (not just one) — each saved and accessible from a list
+- **Depth hint (embedded quote):** *"Workflow redesign is a change leadership skill, not just an AI skill. The challenge isn't the map — it's getting your organization to adopt it."*
+
+#### 5.18 Status Quo Bias (REFERENCE)
+- **Core Concept:** "Your director isn't being irrational. They're experiencing the same cognitive patterns that drive most decisions."
+- **Intro text:** "The Old Brain governs instinctive decision-making because survival is the highest priority. Change triggers threat detection before analysis."
+- **Content:** Four bias cards:
+  - Status Quo Bias — overvaluing current beliefs/habits. Implication: your pitch needs to make standing still feel riskier than moving forward.
+  - Anticipated Regret — fear of negative outcomes from change. Implication: acknowledge the risk of moving, then make the risk of staying concrete.
+  - Selection Difficulty — analysis paralysis from too many options. Implication: present one clear path, not a menu.
+  - Perceived Cost — overestimating time/effort/money. Implication: show the cost of the current process, not just the benefit of the new one.
+- **Key Insight box:** "The County Change Framework is designed to work with these patterns — not against them. It creates conditions where your audience arrives at the need for change on their own terms."
+- **Notes field:** "Which of these biases is strongest in my organization?" (free text)
+
+#### 5.19 County Change Framework (REFERENCE)
+- **What it is:** "A 5-step narrative structure for pitching AI adoption to risk-averse leadership."
+- **Content:** Five steps displayed as a clear progression:
+  1. Community & Policy Forces — Tone: Urgent but factual. External forces beyond any county's control. No internal department issues. Position yourself as reading the landscape alongside your audience.
+  2. Common Practices — Tone: 100% neutral, zero judgment. Most psychologically critical step. Describe what they DO, not what they don't. If stakeholders feel dismissed here, the rest collapses.
+  3. Unintended Consequences — Tone: Honestly negative, framed as natural outcomes. Not failures — natural byproducts of reasonable approaches built for different circumstances. Perfect 1:1 mapping with Step 2.
+  4. A Stronger Path — Tone: Forward-looking, process not products. Use "You" language. No vendor names. Each bullet contrasts with Step 2 counterpart.
+  5. Measurable Impact — Tone: Positive and specific. Concrete outcomes tied to each Step 4 approach. Both community-facing and county-operational gains. Perfect 1:1 mapping with Step 4.
+- **Mapping Rule box:** "Steps 2→3→4→5 must map 1:1. Every gap traces to a practice. Every stronger approach addresses a gap. Every measurable impact validates an approach. The chain must be airtight."
+- **Depth hint (embedded quote):** *"This is one application of the New Vision messaging architecture. The same structure works for any initiative where you're asking risk-averse leadership to move."*
+
+#### 5.20 Build Your County Change Message (EXERCISE)
+- **Goal:** "Draft a change narrative tailored to your county's context."
+- **Structure:** Five structured input sections, each with a label, coaching hint, and free-text area:
+  - Step 1 — Community & Policy Forces: "External forces affecting your county. Three bullets. What makes standing still risky for you right now?"
+  - Step 2 — Common Practices: "What your county does today. Zero judgment. Three bullets describing what teams DO."
+  - Step 3 — Unintended Consequences: "Natural outcomes of Step 2 practices. Mapped 1:1. Not failures — natural byproducts."
+  - Step 4 — A Stronger Path: "What replaces or augments each Step 2 practice. Use 'You.' No vendor names. Mapped 1:1 to Step 2."
+  - Step 5 — Measurable Impact: "Specific outcomes tied to each Step 4 approach. Quantify where possible. Mapped 1:1 to Step 4."
+- **Key Shift Statements section:** Three input fields, each limited in length. Label: "3 required, under 15 words each." Coaching hint: "Use only: 'You're focused on X, but the real advantage is Y.' or 'You don't have an X problem. You have a Y problem.'"
+
+#### 5.21 Closing Page
+- **Two reflection fields:** "One thing I'm taking back Monday" (free text), "One thing I want to learn more about" (free text)
+- **Gladys & Esmeralda quote:** "Small things. Unlikely places. Extraordinary work." / "You don't have to be first. You don't have to be certain. You just have to start — and trust that the web you build will hold more than you expected."
+- **Survey link:** Link to headandheartca.com/close
+
+---
+
+## 6. Content Sections — Tier 2 and Tier 3 (Title Only, Locked)
+
+These sections are visible but locked. They display the section title and a one-line description only. No content is accessible. No "Coming Soon" language.
+
+### Tier 2 — Intermediate (titles — content TBD)
+- Simulate — Practice conversations and scenarios with AI as your counterpart
+- Systematize — Build reusable AI infrastructure: templates, workspaces, and custom tools
+
+### Tier 3 — Advanced (titles — content TBD)
+- Build — Create functional tools, apps, and prototypes with AI
+- Orchestrate — Multi-model quality workflows and verification systems
+- Analyze — Data analysis, pattern recognition, and scenario modeling at scale
+
+---
+
+## 7. Persistent Features (Always Visible)
+
+### 7.1 Enter Code field
+- Accessible from main navigation at all times
+- Text input + submit button
+- Case-insensitive
+- On valid code: section unlocks and opens
+- On invalid code: brief inline message "Code not recognized"
+
+### 7.2 What Would You Like to Learn Next?
+- Persistent section accessible from main navigation
+- Free-text input field where participants can describe what they want to learn, what they're struggling with, or what support they need
+- This is NOT a one-time survey — participants can update it anytime
+- Submissions are visible to the admin
+- Include a brief framing line: "Tell us what you're working on, what you're stuck on, or what you'd like to go deeper on. We use this to shape future workshops and follow-up support."
+
+### 7.3 Resources
+- Persistent link accessible from main navigation
+- Links to headandheartca.com/resources (external page maintained by Anthony)
+- This is where dynamically-updated reference materials live (AI Tools Reference, Data Privacy Grid, and any other supplementary materials)
+- Brief text: "Reference sheets, tool guides, and supplementary materials — always up to date."
+- These materials are NOT embedded in the app because they change frequently and are better maintained as standalone documents
+
+### 7.4 Talk with Anthony
+- Persistent link/button accessible from main navigation
+- Links to a booking/contact page (URL to be provided — placeholder: headandheartca.com/connect)
+- Brief text: "Want to go deeper? Book a conversation, send an email, or just say hello."
+
+---
+
+## 8. Data Persistence
+
+- All participant data (notes, workflow maps, feedback submissions, section unlock status) persists across sessions, tied to their email address
+- Auto-save on all text inputs (no save button needed — save on blur or after brief typing pause)
+- Participants see only their own data
+- Admin sees aggregate engagement data (who logged in, which sections opened, whether notes exist, whether workflow maps exist) but does NOT see note content
+
+---
+
+## 9. Post-Workshop Reinforcement (Phase 2 — Design for Later, Don't Build Now)
+
+The app architecture should accommodate future addition of:
+- Periodic reflection prompts tied to the 6 Ways framework (e.g., "This week, where did you use AI at work? Which of the 6 Ways did it fall under?")
+- Prompts phrased as reflection, not quizzes — this audience will reject being tested
+- Prompts could surface in the app on return visits or potentially via email (email infrastructure not in Phase 1)
+- Spaced at increasing intervals: weekly for weeks 1-3, biweekly for weeks 4-8, monthly after
+
+**Do not build this in Phase 1.** Just ensure the data model and section structure don't prevent adding it later.
+
+---
+
+## 10. Branding
+
+### Colors
+- **Navy (primary):** #1A2744
+- **Gold (accent):** #C8963E
+- **Light gold:** #E8B96A
+- **Cream (background):** #FAFAF7
+- **Light gray (secondary bg):** #F2F2EF
+- **Medium gray (secondary text):** #9A9A9A
+- **Dark gray (body text):** #444444
+- **Rule/border gray:** #D8D8D4
+
+### Typography
+- **Headings:** Lora (serif) or Georgia fallback — bold, used for section titles and framework names
+- **Body text:** Poppins or Arial/Helvetica fallback — clean, readable at small sizes
+- **Labels/badges:** Uppercase, small, letter-spaced — used for section type labels (EXERCISE, REFERENCE) and framework element labels (R, I, C, E, C, O)
+
+### Visual patterns
+- Navy header bars on each section with gold accent text
+- Gold left-border on goal/insight boxes
+- Navy background with light text for key insight callout boxes
+- Exercise sections marked with gold EXERCISE badge
+- Reference sections marked with navy REFERENCE badge
+- Clean, minimal — not busy. Generous whitespace. The content is dense enough; the design should breathe.
+
+### Logo
+- IQmeetEQ logo should appear in the app header/navigation
+- The logo is an SVG with navy square, gold curve, and "IQ MEET EQ" text
+
+---
+
+## 11. Information Architecture — Screen Map
+
+```
+App Root
+├── Welcome / Login (email entry)
+├── Main Navigation
+│   ├── Enter Code (always visible)
+│   ├── Day 1 — Capability
+│   │   ├── Verification Test [locked until code]
+│   │   ├── Tool Safari [locked until code, contains named worksheet tabs]
+│   │   ├── RICECO Framework [locked until code]
+│   │   ├── Draft with RICECO [locked until code]
+│   │   ├── LLM Peer Review [locked until code]
+│   │   ├── Distill [locked until code]
+│   │   ├── Prepare [locked until code]
+│   │   ├── Synthesize [locked until code]
+│   │   ├── Power Follow-Ups [locked until code]
+│   │   ├── What AI Is / Is Not + AI Nested Diagram [locked until code]
+│   │   ├── Persistent Context [locked until code]
+│   │   ├── Red / Yellow / Green [locked until code]
+│   │   ├── Capstone [locked until code]
+│   │   ├── Overnight Assignment [locked until code]
+│   │   └── 6 Ways Worksheet [locked until code]
+│   ├── Day 2 — Change Leadership
+│   │   ├── Overnight Harvest [locked until code]
+│   │   ├── Workflow Configurator [locked until code]
+│   │   ├── Status Quo Bias [locked until code]
+│   │   ├── County Change Framework [locked until code]
+│   │   ├── Build Your County Change Message [locked until code]
+│   │   └── Closing [locked until code]
+│   ├── Tier 2 — Intermediate [locked, titles only]
+│   ├── Tier 3 — Advanced [locked, titles only]
+│   ├── What Would You Like to Learn Next? [always accessible]
+│   ├── Resources [always accessible, links to headandheartca.com/resources]
+│   └── Talk with Anthony [always accessible]
+└── Admin Panel [hidden icon in footer → password field on tap]
+    ├── Participant List (email, last login, engagement indicators)
+    ├── Section Code Management (create, edit, deactivate, assign to cohort)
+    ├── Safari Worksheet Management (name, add, remove worksheets)
+    ├── Feedback Submissions (view "What would you like to learn next?" entries)
+    └── Content Management (edit reference content, add depth hints)
+```
+
+---
+
+## 12. Key Interactions Summary
+
+| Action | Behavior |
+|--------|----------|
+| Enter email (new user) | Create participant record, enter app |
+| Enter email (returning user) | Load saved data, enter app |
+| Enter valid section code | Unlock section, navigate to it |
+| Enter invalid code | Inline error, stay on current view |
+| Type in any notes field | Auto-save after brief pause |
+| Select Safari worksheet tab | Show that worksheet's content and notes; hide others |
+| Add workflow step | Append to ordered list, auto-save |
+| Remove workflow step | Remove from list, auto-save |
+| Reorder workflow step | Drag to reorder, auto-save |
+| Create new workflow map | Add to list of saved maps |
+| Submit "What would you like to learn next?" | Save, visible to admin |
+| Click "Resources" | Navigate to headandheartca.com/resources (external) |
+| Click "Talk with Anthony" | Navigate to external booking URL |
+| Tap locked Tier 2/3 section | Display title + description + "This content is available in future workshops" |
+| Tap hidden footer icon | Reveal admin password field |
+| Enter correct admin password | Open admin panel |
+
+---
+
+## 13. What NOT to Build in Phase 1
+
+- Email sending infrastructure (no magic links, no notification emails)
+- Quiz or assessment functionality
+- Chat or messaging between participants
+- Gamification (points, badges, leaderboards)
+- File upload or attachment capability
+- Integration with external AI tools
+- Mobile native app (web-responsive is sufficient)
+- Reinforcement/nudge system (architecture for it, don't build it)
+
+---
+
+## 14. Success Criteria
+
+The app works if:
+1. A participant can enter their email at the start of Day 1 and be in the app within 10 seconds
+2. The facilitator can unlock sections by announcing codes, and participants can follow along in real time
+3. Notes auto-save reliably — no one loses what they wrote
+4. The workflow configurator produces something a manager would actually bring back to their team
+5. After the workshop, a returning participant can find everything they built and wrote
+6. The admin can see who's using the app without reading their private notes
+7. A non-participant who discovers the app sees enough to be interested but can't access workshop content without codes
+
+---
+
+*© 2026 IQmeetEQ. All rights reserved.*

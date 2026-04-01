@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: IQmeetEQ Workshop Companion API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Participant authentication
+  - name: sections
+    description: Workshop sections
+  - name: notes
+    description: Participant notes
+  - name: workflows
+    description: Workflow maps
+  - name: feedback
+    description: Feedback submissions
+  - name: admin
+    description: Admin operations
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,466 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login or register participant by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Invalid email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current participant
+      responses:
+        "200":
+          description: Current participant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Participant"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /sections:
+    get:
+      operationId: getSections
+      tags: [sections]
+      summary: Get all sections with unlock status
+      responses:
+        "200":
+          description: List of sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SectionWithStatus"
+
+  /sections/unlock:
+    post:
+      operationId: unlockSection
+      tags: [sections]
+      summary: Unlock a section with a code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnlockRequest"
+      responses:
+        "200":
+          description: Section unlocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnlockResponse"
+        "400":
+          description: Invalid code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /notes:
+    get:
+      operationId: getNotes
+      tags: [notes]
+      summary: Get all notes for current participant
+      responses:
+        "200":
+          description: Notes map
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Note"
+
+  /notes/{sectionId}:
+    get:
+      operationId: getNotesBySection
+      tags: [notes]
+      summary: Get notes for a specific section
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Notes for section
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Note"
+
+    put:
+      operationId: saveNote
+      tags: [notes]
+      summary: Save a note for a section
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveNoteRequest"
+      responses:
+        "200":
+          description: Note saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+
+  /workflow-maps:
+    get:
+      operationId: getWorkflowMaps
+      tags: [workflows]
+      summary: Get all workflow maps for current participant
+      responses:
+        "200":
+          description: List of workflow maps
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkflowMap"
+
+    post:
+      operationId: createWorkflowMap
+      tags: [workflows]
+      summary: Create a new workflow map
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkflowMapRequest"
+      responses:
+        "201":
+          description: Workflow map created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowMap"
+
+  /workflow-maps/{id}:
+    get:
+      operationId: getWorkflowMap
+      tags: [workflows]
+      summary: Get a workflow map
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Workflow map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowMap"
+
+    put:
+      operationId: updateWorkflowMap
+      tags: [workflows]
+      summary: Update a workflow map
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWorkflowMapRequest"
+      responses:
+        "200":
+          description: Workflow map updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowMap"
+
+    delete:
+      operationId: deleteWorkflowMap
+      tags: [workflows]
+      summary: Delete a workflow map
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /feedback:
+    get:
+      operationId: getFeedback
+      tags: [feedback]
+      summary: Get current participant's feedback
+      responses:
+        "200":
+          description: Feedback
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feedback"
+
+    put:
+      operationId: saveFeedback
+      tags: [feedback]
+      summary: Save feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveFeedbackRequest"
+      responses:
+        "200":
+          description: Feedback saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feedback"
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Admin login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Invalid password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/participants:
+    get:
+      operationId: getParticipants
+      tags: [admin]
+      summary: Get all participants with engagement data
+      responses:
+        "200":
+          description: List of participants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ParticipantEngagement"
+
+  /admin/sections:
+    get:
+      operationId: getAdminSections
+      tags: [admin]
+      summary: Get all sections with their codes
+      responses:
+        "200":
+          description: Sections with codes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminSection"
+
+    put:
+      operationId: updateSectionCode
+      tags: [admin]
+      summary: Update a section's code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSectionCodeRequest"
+      responses:
+        "200":
+          description: Code updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSection"
+
+  /admin/safari-worksheets:
+    get:
+      operationId: getSafariWorksheets
+      tags: [admin]
+      summary: Get all safari worksheets
+      responses:
+        "200":
+          description: Worksheets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SafariWorksheet"
+
+    post:
+      operationId: createSafariWorksheet
+      tags: [admin]
+      summary: Create safari worksheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSafariWorksheetRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafariWorksheet"
+
+  /admin/safari-worksheets/{id}:
+    put:
+      operationId: updateSafariWorksheet
+      tags: [admin]
+      summary: Update safari worksheet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSafariWorksheetRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafariWorksheet"
+
+    delete:
+      operationId: deleteSafariWorksheet
+      tags: [admin]
+      summary: Delete safari worksheet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/feedback:
+    get:
+      operationId: getAdminFeedback
+      tags: [admin]
+      summary: Get all feedback submissions
+      responses:
+        "200":
+          description: Feedback submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminFeedback"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get aggregate stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +505,398 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+      required:
+        - email
+
+    LoginResponse:
+      type: object
+      properties:
+        participant:
+          $ref: "#/components/schemas/Participant"
+        isNew:
+          type: boolean
+      required:
+        - participant
+        - isNew
+
+    Participant:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - email
+        - createdAt
+        - lastLoginAt
+
+    SectionWithStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        day:
+          type: integer
+        order:
+          type: integer
+        tier:
+          type: integer
+        type:
+          type: string
+          enum: [exercise, reference, locked]
+        unlocked:
+          type: boolean
+        hasCode:
+          type: boolean
+      required:
+        - id
+        - title
+        - description
+        - day
+        - order
+        - tier
+        - type
+        - unlocked
+        - hasCode
+
+    UnlockRequest:
+      type: object
+      properties:
+        code:
+          type: string
+      required:
+        - code
+
+    UnlockResponse:
+      type: object
+      properties:
+        sectionId:
+          type: string
+        sectionTitle:
+          type: string
+        alreadyUnlocked:
+          type: boolean
+      required:
+        - sectionId
+        - sectionTitle
+        - alreadyUnlocked
+
+    Note:
+      type: object
+      properties:
+        id:
+          type: integer
+        sectionId:
+          type: string
+        fieldKey:
+          type: string
+        content:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sectionId
+        - fieldKey
+        - content
+        - updatedAt
+
+    SaveNoteRequest:
+      type: object
+      properties:
+        fieldKey:
+          type: string
+        content:
+          type: string
+      required:
+        - fieldKey
+        - content
+
+    WorkflowMap:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        frequency:
+          type: string
+        currentSteps:
+          type: array
+          items:
+            type: string
+        redesignedSteps:
+          type: array
+          items:
+            type: string
+        verificationCheckpoints:
+          type: string
+        stopConditions:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - frequency
+        - currentSteps
+        - redesignedSteps
+        - verificationCheckpoints
+        - stopConditions
+        - createdAt
+        - updatedAt
+
+    CreateWorkflowMapRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        frequency:
+          type: string
+        currentSteps:
+          type: array
+          items:
+            type: string
+        redesignedSteps:
+          type: array
+          items:
+            type: string
+        verificationCheckpoints:
+          type: string
+        stopConditions:
+          type: string
+      required:
+        - name
+
+    UpdateWorkflowMapRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        frequency:
+          type: string
+        currentSteps:
+          type: array
+          items:
+            type: string
+        redesignedSteps:
+          type: array
+          items:
+            type: string
+        verificationCheckpoints:
+          type: string
+        stopConditions:
+          type: string
+
+    Feedback:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - content
+        - updatedAt
+
+    SaveFeedbackRequest:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+
+    AdminLoginRequest:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+        - password
+
+    ParticipantEngagement:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        lastLoginAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        sectionsOpened:
+          type: integer
+        hasNotes:
+          type: boolean
+        hasWorkflowMaps:
+          type: boolean
+        hasFeedback:
+          type: boolean
+      required:
+        - id
+        - email
+        - lastLoginAt
+        - createdAt
+        - sectionsOpened
+        - hasNotes
+        - hasWorkflowMaps
+        - hasFeedback
+
+    AdminSection:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        code:
+          type: string
+        codeActive:
+          type: boolean
+        cohort:
+          type: string
+        tier:
+          type: integer
+      required:
+        - id
+        - title
+        - code
+        - codeActive
+        - tier
+
+    UpdateSectionCodeRequest:
+      type: object
+      properties:
+        sectionId:
+          type: string
+        code:
+          type: string
+        codeActive:
+          type: boolean
+        cohort:
+          type: string
+      required:
+        - sectionId
+        - code
+        - codeActive
+
+    SafariWorksheet:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sortOrder:
+          type: integer
+        active:
+          type: boolean
+      required:
+        - id
+        - name
+        - sortOrder
+        - active
+
+    CreateSafariWorksheetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        sortOrder:
+          type: integer
+      required:
+        - name
+
+    UpdateSafariWorksheetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        sortOrder:
+          type: integer
+        active:
+          type: boolean
+
+    AdminFeedback:
+      type: object
+      properties:
+        id:
+          type: integer
+        participantEmail:
+          type: string
+        content:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - participantEmail
+        - content
+        - updatedAt
+
+    AdminStats:
+      type: object
+      properties:
+        totalParticipants:
+          type: integer
+        activeToday:
+          type: integer
+        sectionsUnlocked:
+          type: integer
+        totalWorkflowMaps:
+          type: integer
+        feedbackSubmissions:
+          type: integer
+      required:
+        - totalParticipants
+        - activeToday
+        - sectionsUnlocked
+        - totalWorkflowMaps
+        - feedbackSubmissions
