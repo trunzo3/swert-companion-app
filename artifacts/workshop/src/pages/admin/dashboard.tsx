@@ -429,7 +429,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="worksheets">Safari Worksheets</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="home">Home Message</TabsTrigger>
-            <TabsTrigger value="feedback">Feedback</TabsTrigger>
+            <TabsTrigger value="feedback">What should we teach next?</TabsTrigger>
           </TabsList>
 
           <TabsContent value="participants">

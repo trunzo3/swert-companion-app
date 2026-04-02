@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { SectionHeader } from "../SectionHeader";
+import { useSaveFeedback } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 const levels = [
   {
@@ -67,10 +71,30 @@ const levels = [
 export function WhereAreYouOnThePath() {
   const [activeLevel, setActiveLevel] = useState(1);
   const level = levels[activeLevel - 1];
+  const [feedbackText, setFeedbackText] = useState("");
+  const feedbackMutation = useSaveFeedback();
+  const { toast } = useToast();
+
+  const submitFeedback = () => {
+    if (!feedbackText.trim()) return;
+    feedbackMutation.mutate(
+      { data: { content: feedbackText } },
+      {
+        onSuccess: () => {
+          toast({ title: "Submitted", description: "Thank you for your thoughts!" });
+          setFeedbackText("");
+        },
+        onError: () => {
+          toast({ variant: "destructive", title: "Error", description: "Could not submit feedback." });
+        }
+      }
+    );
+  };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <SectionHeader title="Where Are You on the Path?" type="reference" />
+      <p className="text-sm text-muted-foreground -mt-4 mb-6">Self-assess your AI skill level</p>
 
       <div className="flex border-b border-border mb-6">
         {levels.map((l) => (
@@ -109,6 +133,23 @@ export function WhereAreYouOnThePath() {
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="mt-8 border-t border-border pt-8">
+        <h4 className="text-base font-bold text-primary mb-2">What should we teach next?</h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          Tell us what you're working on, what you're stuck on, or what you'd like to go deeper on. We use this to shape future workshops and follow-up support.
+        </p>
+        <Textarea
+          placeholder="Share your thoughts..."
+          value={feedbackText}
+          onChange={(e) => setFeedbackText(e.target.value)}
+          className="min-h-[100px] mb-3"
+          data-testid="input-feedback-levels"
+        />
+        <Button onClick={submitFeedback} disabled={feedbackMutation.isPending}>
+          Submit
+        </Button>
       </div>
     </div>
   );

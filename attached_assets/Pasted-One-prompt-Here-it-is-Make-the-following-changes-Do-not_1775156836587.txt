@@ -1,0 +1,26 @@
+One prompt. Here it is:
+
+"Make the following changes. Do not change any existing section content or styling unless specifically noted below.
+
+**1. Sidebar scroll:** Make the sidebar fixed in position but independently scrollable within itself. The sidebar should not scroll with the main content area. The main content area scrolls separately.
+
+**2. Home screen cards:** Replace the current three cards with:
+- 'What should we teach next?' (bold) / 'Tell us what you need' (subtitle)
+- 'Talk with Anthony' (bold) / 'Book a conversation' (subtitle)
+- 'Other Resources' (bold) / 'Additional content to support your journey' (subtitle)
+
+Remove the 'Where Are You on the Path?' card from the home screen entirely.
+
+**3. Home screen links:** 'Talk with Anthony' on the home screen links to https://talkwithanthony.com (opens in new tab). 'Other Resources' links to https://headandheartca.com/resources (opens in new tab).
+
+**4. Fix 'What should we teach next?' on home screen:** Currently clicking it from the home screen shows a blank page. It should show the same dialog/modal with text input that appears when clicking it from the header.
+
+**5. Rename everywhere:** Change every instance of 'What Would You Like to Learn Next?' to 'What should we teach next?' — header, home screen, sidebar, modal, admin feedback tab, everywhere.
+
+**6. Header bar simplification:** Remove 'Resources' and 'What should we teach next?' from the top header bar. The header should contain only the Enter Code field and 'Talk with Anthony.' 'Talk with Anthony' in the header links to https://talkwithanthony.com (opens in new tab).
+
+**7. Rename 'Your Progress' to 'Workshop Progress' on the home screen.**
+
+**8. Levels page updates:** On the 'Where Are You on the Path?' page, add the subtitle 'Self-assess your AI skill level' in muted text directly under the page heading. Then below the level detail panel (the box showing the level name, tagline, and three bullets), add a 'What should we teach next?' section with the framing prompt 'Tell us what you're working on, what you're stuck on, or what you'd like to go deeper on. We use this to shape future workshops and follow-up support.' and a large text area that auto-saves. This should function the same as the dialog version — submissions visible in admin feedback.
+
+**9. Sidebar:** Leave 'Where Are You on the Path?' as-is in the sidebar. No subtitle. No changes."

@@ -60,7 +60,7 @@ export function Sidebar({ sections, activeSectionId, onSelectSection, onNavigate
   );
 
   return (
-    <div className="w-64 border-r bg-card min-h-[calc(100vh-4rem)] py-4 overflow-y-auto hidden md:flex flex-col">
+    <div className="w-64 border-r bg-card h-full overflow-y-auto hidden md:flex flex-col flex-shrink-0">
       <div className="flex-1">
         <div className="mb-4 px-2 space-y-1">
           <button

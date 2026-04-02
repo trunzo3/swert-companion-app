@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useGetSections } from "@workspace/api-client-react";
 import { getSession, clearSession } from "@/lib/auth";
 import { Logo } from "@/components/logo";
+import { FeedbackDialog } from "@/components/workshop/TopNav";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -14,6 +15,7 @@ export default function Home() {
   const [code, setCode] = useState("");
   const [codeMsg, setCodeMsg] = useState("");
   const [codePending, setCodePending] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     if (!session) { setLocation("/"); return; }
@@ -104,7 +106,7 @@ export default function Home() {
         </div>
 
         <div className="bg-card border border-border rounded-lg p-5">
-          <div className="text-sm font-bold text-primary mb-3">Your Progress</div>
+          <div className="text-sm font-bold text-primary mb-3">Workshop Progress</div>
           <div className="h-2 bg-secondary rounded-full overflow-hidden mb-2">
             <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${progressPct}%` }} />
           </div>
@@ -113,27 +115,29 @@ export default function Home() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
-            onClick={() => setLocation("/workshop?section=levels")}
+            onClick={() => setFeedbackOpen(true)}
             className="bg-card border border-border rounded-lg p-5 text-left hover:border-accent transition-colors shadow-sm"
           >
-            <h4 className="font-bold text-primary text-sm mb-1">Where Are You on the Path?</h4>
-            <p className="text-xs text-muted-foreground">See your AI skill level</p>
-          </button>
-          <button
-            onClick={() => setLocation("/workshop?section=feedback")}
-            className="bg-card border border-border rounded-lg p-5 text-left hover:border-accent transition-colors shadow-sm"
-          >
-            <h4 className="font-bold text-primary text-sm mb-1">What Would You Like to Learn Next?</h4>
+            <h4 className="font-bold text-primary text-sm mb-1">What should we teach next?</h4>
             <p className="text-xs text-muted-foreground">Tell us what you need</p>
           </button>
           <a
-            href="https://calendly.com/anthonylevato/iqmeeteq"
+            href="https://talkwithanthony.com"
             target="_blank"
             rel="noopener noreferrer"
             className="bg-card border border-border rounded-lg p-5 text-left hover:border-accent transition-colors shadow-sm block"
           >
             <h4 className="font-bold text-primary text-sm mb-1">Talk with Anthony</h4>
             <p className="text-xs text-muted-foreground">Book a conversation</p>
+          </a>
+          <a
+            href="https://headandheartca.com/resources"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-card border border-border rounded-lg p-5 text-left hover:border-accent transition-colors shadow-sm block"
+          >
+            <h4 className="font-bold text-primary text-sm mb-1">Other Resources</h4>
+            <p className="text-xs text-muted-foreground">Additional content to support your journey</p>
           </a>
         </div>
 
@@ -155,6 +159,8 @@ export default function Home() {
           </button>
         </div>
       </main>
+
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </div>
   );
 }
