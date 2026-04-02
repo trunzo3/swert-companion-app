@@ -56,6 +56,7 @@ router.get("/sections", async (req, res) => {
     hasCode: codeMap.has(s.id) && (codeMap.get(s.id)?.codeActive ?? false),
   }));
 
+  res.set("Cache-Control", "no-store");
   res.json(sections);
 });
 
