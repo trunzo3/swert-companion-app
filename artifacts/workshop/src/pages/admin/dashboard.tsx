@@ -108,24 +108,21 @@ interface SectionFile {
   uploadedAt: string;
 }
 
-function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string }[] }) {
+function SafariGuidesTab() {
+  const { data: worksheets = [], refetch: refetchWorksheets } = useGetSafariWorksheets();
+  const createWorksheet = useCreateSafariWorksheet();
+  const updateWorksheet = useUpdateSafariWorksheet();
+  const deleteWorksheet = useDeleteSafariWorksheet();
+
   const [files, setFiles] = useState<SectionFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [selectedSection, setSelectedSection] = useState("tool-safari");
   const [selectedTab, setSelectedTab] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [msg, setMsg] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dropZoneRef = useRef<HTMLDivElement>(null);
-
-  const SECTIONS_WITH_FILES = [
-    { id: "tool-safari", label: "Tool Safari" },
-    { id: "verification-test", label: "Verification Test" },
-    { id: "capstone", label: "Capstone" },
-  ];
 
   const ACCEPTED = ".pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg";
   const MAX_BYTES = 10 * 1024 * 1024;
@@ -133,13 +130,26 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
   const loadFiles = async () => {
     setLoadingFiles(true);
     try {
-      const res = await fetch(`${BASE}/api/files/by-section/${selectedSection}`, { credentials: "include" });
+      const res = await fetch(`${BASE}/api/files/by-section/tool-safari`, { credentials: "include" });
       if (res.ok) setFiles(await res.json());
     } catch {}
     setLoadingFiles(false);
   };
 
-  useEffect(() => { loadFiles(); }, [selectedSection]);
+  useEffect(() => { loadFiles(); }, []);
+
+  useEffect(() => {
+    if (worksheets.length > 0 && !selectedTab) {
+      setSelectedTab(worksheets[0].name);
+    }
+  }, [worksheets]);
+
+  const addWorksheet = () => {
+    createWorksheet.mutate(
+      { data: { name: "New Tool" } },
+      { onSuccess: () => refetchWorksheets() }
+    );
+  };
 
   const acceptFile = (file: File) => {
     if (file.size > MAX_BYTES) { setMsg("File exceeds 10 MB limit."); return; }
@@ -163,6 +173,7 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
 
   const handleUpload = async () => {
     if (!pendingFile) { setMsg("Please select a file."); return; }
+    if (!selectedTab) { setMsg("Please select a Tool Tab first."); return; }
     setUploading(true);
     setMsg("");
     try {
@@ -174,8 +185,8 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            sectionId: selectedSection,
-            toolTab: selectedTab || null,
+            sectionId: "tool-safari",
+            toolTab: selectedTab,
             displayName: displayName || pendingFile.name,
             mimeType: pendingFile.type || "application/pdf",
             fileData: base64Data,
@@ -210,106 +221,133 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
   const formatBytes = (b: number) => b < 1024 * 1024 ? `${(b / 1024).toFixed(0)} KB` : `${(b / (1024 * 1024)).toFixed(1)} MB`;
 
   return (
-    <div className="space-y-8">
-      <div className="bg-slate-50 border rounded-lg p-5 space-y-4">
-        <h3 className="font-semibold text-slate-800">Upload File</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Label className="text-xs mb-1 block">Section</Label>
-            <select
-              value={selectedSection}
-              onChange={e => { setSelectedSection(e.target.value); setSelectedTab(""); }}
-              className="w-full h-9 border border-input rounded-md px-3 py-1 text-sm bg-white"
-            >
-              {SECTIONS_WITH_FILES.map(s => (
-                <option key={s.id} value={s.id}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-          {selectedSection === "tool-safari" && (
-            <div>
-              <Label className="text-xs mb-1 block">Tool Tab (optional)</Label>
-              <select
-                value={selectedTab}
-                onChange={e => setSelectedTab(e.target.value)}
-                className="w-full h-9 border border-input rounded-md px-3 py-1 text-sm bg-white"
-              >
-                <option value="">— Any / General —</option>
-                {worksheets.map(w => (
-                  <option key={w.id} value={w.name}>{w.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div>
-            <Label className="text-xs mb-1 block">Display Name</Label>
-            <Input
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              placeholder="e.g. ChatGPT Safari Guide"
-              className="text-sm"
-            />
-          </div>
+    <div className="space-y-10">
+      {/* Tool List */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-semibold text-slate-800">Tools</h3>
+          <Button onClick={addWorksheet}><Plus className="w-4 h-4 mr-2" /> Add Tool</Button>
         </div>
-
-        {/* Drop zone */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED}
-          className="hidden"
-          onChange={handleFileInput}
-        />
-        {!pendingFile ? (
-          <div
-            ref={dropZoneRef}
-            onDragOver={e => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg py-8 px-4 cursor-pointer transition-colors ${dragging ? "border-blue-400 bg-blue-50" : "border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50"}`}
-          >
-            <UploadCloud className="w-8 h-8 text-slate-400" />
-            <p className="text-sm text-slate-600">Drag and drop a file here</p>
-            <p className="text-sm text-slate-500">
-              or{" "}
-              <span
-                className="underline text-slate-700 cursor-pointer"
-                onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}
-              >
-                browse to upload
-              </span>
-            </p>
-            <p className="text-xs text-slate-400 mt-1">PDF, max 10 MB</p>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 border rounded-lg px-4 py-3 bg-white">
-            <FileText className="w-5 h-5 text-slate-500 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-800 truncate">{pendingFile.name}</p>
-              <p className="text-xs text-slate-400">{formatBytes(pendingFile.size)}</p>
-            </div>
-            <button
-              onClick={() => { setPendingFile(null); setDisplayName(""); setMsg(""); }}
-              className="text-slate-400 hover:text-slate-600 p-1 rounded"
-              title="Remove file"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        <div className="flex items-center gap-4">
-          <Button onClick={handleUpload} disabled={uploading || !pendingFile} size="sm">
-            <Upload className="w-4 h-4 mr-2" />
-            {uploading ? "Uploading..." : "Upload"}
-          </Button>
-          {msg && <span className={`text-sm font-medium ${msg.includes("!") ? "text-green-600" : "text-red-600"}`}>{msg}</span>}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50">
+                <TableHead>Tool Name</TableHead>
+                <TableHead>Active</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {worksheets.map(w => (
+                <WorksheetRow
+                  key={w.id}
+                  worksheet={w}
+                  onUpdate={(data) => updateWorksheet.mutate({ id: w.id, data }, { onSuccess: () => refetchWorksheets() })}
+                  onDelete={() => deleteWorksheet.mutate({ id: w.id }, { onSuccess: () => refetchWorksheets() })}
+                />
+              ))}
+              {worksheets.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No tools configured yet. Add a tool above.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
+      {/* File Upload */}
+      <div className="bg-slate-50 border rounded-lg p-5 space-y-4">
+        <h3 className="font-semibold text-slate-800">Upload Guide File</h3>
+
+        {worksheets.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Add at least one tool above before uploading files.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-xs mb-1 block">Tool Tab <span className="text-red-500">*</span></Label>
+                <select
+                  value={selectedTab}
+                  onChange={e => setSelectedTab(e.target.value)}
+                  className="w-full h-9 border border-input rounded-md px-3 py-1 text-sm bg-white"
+                  required
+                >
+                  {worksheets.map(w => (
+                    <option key={w.id} value={w.name}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">Display Name</Label>
+                <Input
+                  value={displayName}
+                  onChange={e => setDisplayName(e.target.value)}
+                  placeholder="e.g. ChatGPT Safari Guide"
+                  className="text-sm"
+                />
+              </div>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ACCEPTED}
+              className="hidden"
+              onChange={handleFileInput}
+            />
+            {!pendingFile ? (
+              <div
+                onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg py-8 px-4 cursor-pointer transition-colors ${dragging ? "border-blue-400 bg-blue-50" : "border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50"}`}
+              >
+                <UploadCloud className="w-8 h-8 text-slate-400" />
+                <p className="text-sm text-slate-600">Drag and drop a file here</p>
+                <p className="text-sm text-slate-500">
+                  or{" "}
+                  <span
+                    className="underline text-slate-700 cursor-pointer"
+                    onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                  >
+                    browse to upload
+                  </span>
+                </p>
+                <p className="text-xs text-slate-400 mt-1">PDF and common formats, max 10 MB</p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 border rounded-lg px-4 py-3 bg-white">
+                <FileText className="w-5 h-5 text-slate-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">{pendingFile.name}</p>
+                  <p className="text-xs text-slate-400">{formatBytes(pendingFile.size)}</p>
+                </div>
+                <button
+                  onClick={() => { setPendingFile(null); setDisplayName(""); setMsg(""); }}
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded"
+                  title="Remove file"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-4">
+              <Button onClick={handleUpload} disabled={uploading || !pendingFile} size="sm">
+                <Upload className="w-4 h-4 mr-2" />
+                {uploading ? "Uploading..." : "Upload"}
+              </Button>
+              {msg && <span className={`text-sm font-medium ${msg.includes("!") ? "text-green-600" : "text-red-600"}`}>{msg}</span>}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* File List */}
       <div>
-        <h3 className="font-semibold text-slate-800 mb-3">Files in "{SECTIONS_WITH_FILES.find(s=>s.id===selectedSection)?.label}"</h3>
+        <h3 className="font-semibold text-slate-800 mb-3">Uploaded Files</h3>
         {loadingFiles ? (
           <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
         ) : (
@@ -349,7 +387,7 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
                 ))}
                 {files.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No files uploaded for this section yet.</TableCell>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No files uploaded yet.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -373,13 +411,9 @@ export default function AdminDashboard() {
   const { data: stats } = useGetAdminStats({ query: { refetchInterval: 10000 } });
   const { data: participants = [] } = useGetParticipants();
   const { data: sections = [], refetch: refetchSections } = useGetAdminSections();
-  const { data: worksheets = [], refetch: refetchWorksheets } = useGetSafariWorksheets();
   const { data: feedback = [] } = useGetAdminFeedback();
 
   const updateSectionCode = useUpdateSectionCode();
-  const createWorksheet = useCreateSafariWorksheet();
-  const updateWorksheet = useUpdateSafariWorksheet();
-  const deleteWorksheet = useDeleteSafariWorksheet();
 
   const handleLogout = () => {
     setAdminAuth(false);
@@ -390,13 +424,6 @@ export default function AdminDashboard() {
     updateSectionCode.mutate(
       { data: { sectionId, code, codeActive } },
       { onSuccess: () => refetchSections() }
-    );
-  };
-
-  const addWorksheet = () => {
-    createWorksheet.mutate(
-      { data: { name: "New Tool" } },
-      { onSuccess: () => refetchWorksheets() }
     );
   };
 
@@ -426,8 +453,7 @@ export default function AdminDashboard() {
           <TabsList className="mb-6 bg-slate-100 flex-wrap h-auto">
             <TabsTrigger value="participants">Participants</TabsTrigger>
             <TabsTrigger value="sections">Section Codes</TabsTrigger>
-            <TabsTrigger value="worksheets">Safari Worksheets</TabsTrigger>
-            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="safari-guides">Safari Guides</TabsTrigger>
             <TabsTrigger value="home">Home Message</TabsTrigger>
             <TabsTrigger value="feedback">What should we teach next?</TabsTrigger>
           </TabsList>
@@ -489,40 +515,8 @@ export default function AdminDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="worksheets">
-            <div className="flex justify-end mb-4">
-              <Button onClick={addWorksheet}><Plus className="w-4 h-4 mr-2" /> Add Tool</Button>
-            </div>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50">
-                    <TableHead>Tool Name</TableHead>
-                    <TableHead>Active</TableHead>
-                    <TableHead className="w-[100px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {worksheets.map(w => (
-                    <WorksheetRow
-                      key={w.id}
-                      worksheet={w}
-                      onUpdate={(data) => updateWorksheet.mutate({ id: w.id, data }, { onSuccess: () => refetchWorksheets() })}
-                      onDelete={() => deleteWorksheet.mutate({ id: w.id }, { onSuccess: () => refetchWorksheets() })}
-                    />
-                  ))}
-                  {worksheets.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">No worksheets configured</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="files">
-            <FileManagerTab worksheets={worksheets} />
+          <TabsContent value="safari-guides">
+            <SafariGuidesTab />
           </TabsContent>
 
           <TabsContent value="home">

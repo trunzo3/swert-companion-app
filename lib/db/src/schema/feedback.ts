@@ -5,7 +5,7 @@ import { participantsTable } from "./participants";
 
 export const feedbackTable = pgTable("feedback", {
   id: serial("id").primaryKey(),
-  participantId: integer("participant_id").notNull().references(() => participantsTable.id).unique(),
+  participantId: integer("participant_id").notNull().references(() => participantsTable.id),
   content: text("content").notNull().default(""),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
