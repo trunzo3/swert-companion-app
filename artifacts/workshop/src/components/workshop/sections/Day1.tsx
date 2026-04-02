@@ -584,24 +584,6 @@ export function WhatAiIs({ sectionId }: { sectionId: string }) {
         </div>
       </div>
 
-      <div className="mb-12 border p-8 rounded-lg bg-white flex flex-col items-center justify-center shadow-inner">
-        <h4 className="font-bold text-primary uppercase text-sm tracking-wider mb-6">The Hierarchy</h4>
-        <div className="relative w-64 h-64 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-2 border-primary/20 bg-primary/5 flex items-start justify-center pt-4">
-            <span className="text-xs font-bold text-primary/60 uppercase">AI (Rules/Logic)</span>
-          </div>
-          <div className="absolute inset-4 rounded-full border-2 border-primary/40 bg-primary/10 flex items-start justify-center pt-4">
-            <span className="text-xs font-bold text-primary/80 uppercase">Machine Learning</span>
-          </div>
-          <div className="absolute inset-8 rounded-full border-2 border-accent/60 bg-accent/10 flex items-start justify-center pt-4">
-            <span className="text-xs font-bold text-accent uppercase">LLMs</span>
-          </div>
-          <div className="absolute inset-14 rounded-full bg-primary flex items-center justify-center text-center p-2 shadow-lg">
-            <span className="text-xs font-bold text-white uppercase leading-tight">GenAI<br/>Tools</span>
-          </div>
-        </div>
-      </div>
-
       <NotesField sectionId={sectionId} fieldKey="notes" label="Notes" />
     </div>
   );

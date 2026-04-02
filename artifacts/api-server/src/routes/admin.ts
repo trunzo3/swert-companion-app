@@ -11,7 +11,7 @@ import {
   sectionFilesTable,
   homeContentTable,
 } from "@workspace/db/schema";
-import { eq, count, sql } from "drizzle-orm";
+import { eq, count, sql, desc } from "drizzle-orm";
 import {
   UpdateSectionCodeBody,
   CreateSafariWorksheetBody,
@@ -235,7 +235,8 @@ router.get("/admin/feedback", requireAdmin, async (req, res) => {
     })
     .from(feedbackTable)
     .innerJoin(participantsTable, eq(feedbackTable.participantId, participantsTable.id))
-    .where(sql`${feedbackTable.content} != ''`);
+    .where(sql`${feedbackTable.content} != ''`)
+    .orderBy(desc(feedbackTable.updatedAt));
 
   res.json(results);
 });

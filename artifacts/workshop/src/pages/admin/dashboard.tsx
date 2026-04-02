@@ -399,6 +399,55 @@ function SafariGuidesTab() {
   );
 }
 
+type SortKey = "date-desc" | "date-asc" | "email-asc";
+
+function FeedbackTab({ feedback }: { feedback: any[] }) {
+  const [sort, setSort] = useState<SortKey>("date-desc");
+
+  const sorted = [...feedback].sort((a, b) => {
+    if (sort === "date-desc") return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    if (sort === "date-asc") return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+    return a.participantEmail.localeCompare(b.participantEmail);
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sort by</Label>
+        <select
+          value={sort}
+          onChange={e => setSort(e.target.value as SortKey)}
+          className="h-8 border border-input rounded-md px-2 py-1 text-sm bg-white"
+        >
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="email-asc">Email A–Z</option>
+        </select>
+        <span className="text-xs text-muted-foreground ml-auto">{feedback.length} submission{feedback.length !== 1 ? "s" : ""}</span>
+      </div>
+
+      {sorted.map(f => (
+        <Card key={f.id}>
+          <CardHeader className="py-3 bg-slate-50">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">{f.participantEmail}</span>
+              <span className="text-xs text-muted-foreground">{format(new Date(f.updatedAt), "MMM d, h:mm a")}</span>
+            </div>
+          </CardHeader>
+          <CardContent className="py-4">
+            <p className="whitespace-pre-wrap">{f.content}</p>
+          </CardContent>
+        </Card>
+      ))}
+      {feedback.length === 0 && (
+        <div className="text-center py-12 border rounded-lg bg-slate-50 text-muted-foreground">
+          No feedback received yet
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
 
@@ -524,26 +573,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="feedback">
-            <div className="space-y-4">
-              {feedback.map(f => (
-                <Card key={f.id}>
-                  <CardHeader className="py-3 bg-slate-50">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold">{f.participantEmail}</span>
-                      <span className="text-xs text-muted-foreground">{format(new Date(f.updatedAt), "MMM d, h:mm a")}</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="py-4">
-                    <p className="whitespace-pre-wrap">{f.content}</p>
-                  </CardContent>
-                </Card>
-              ))}
-              {feedback.length === 0 && (
-                <div className="text-center py-12 border rounded-lg bg-slate-50 text-muted-foreground">
-                  No feedback received yet
-                </div>
-              )}
-            </div>
+            <FeedbackTab feedback={feedback} />
           </TabsContent>
         </Tabs>
       </main>

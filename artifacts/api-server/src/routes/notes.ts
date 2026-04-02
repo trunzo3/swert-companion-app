@@ -22,6 +22,7 @@ router.get("/notes", async (req, res) => {
 });
 
 router.get("/notes/:sectionId", async (req, res) => {
+  res.set("Cache-Control", "no-store");
   const participantId = req.session?.participantId;
   if (!participantId) {
     res.status(401).json({ error: "Not authenticated" });
