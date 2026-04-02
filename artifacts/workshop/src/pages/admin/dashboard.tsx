@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Users, BookOpen, KeyRound, Map, MessageSquare, LogOut, Check, X, Trash2, Plus, Upload, FileText } from "lucide-react";
+import { Users, BookOpen, KeyRound, Map, MessageSquare, LogOut, Check, X, Trash2, Plus, Upload, FileText, UploadCloud } from "lucide-react";
 import { format } from "date-fns";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -111,18 +111,24 @@ interface SectionFile {
 function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string }[] }) {
   const [files, setFiles] = useState<SectionFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
-  const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [selectedSection, setSelectedSection] = useState("tool-safari");
   const [selectedTab, setSelectedTab] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [msg, setMsg] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   const SECTIONS_WITH_FILES = [
     { id: "tool-safari", label: "Tool Safari" },
     { id: "verification-test", label: "Verification Test" },
     { id: "capstone", label: "Capstone" },
   ];
+
+  const ACCEPTED = ".pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg";
+  const MAX_BYTES = 10 * 1024 * 1024;
 
   const loadFiles = async () => {
     setLoadingFiles(true);
@@ -135,10 +141,29 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
 
   useEffect(() => { loadFiles(); }, [selectedSection]);
 
+  const acceptFile = (file: File) => {
+    if (file.size > MAX_BYTES) { setMsg("File exceeds 10 MB limit."); return; }
+    setPendingFile(file);
+    setMsg("");
+    if (!displayName) setDisplayName(file.name.replace(/\.[^.]+$/, ""));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) acceptFile(file);
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) acceptFile(file);
+    e.target.value = "";
+  };
+
   const handleUpload = async () => {
-    const file = fileRef.current?.files?.[0];
-    if (!file) { setMsg("Please select a file."); return; }
-    setUploadingFor(selectedTab || selectedSection);
+    if (!pendingFile) { setMsg("Please select a file."); return; }
+    setUploading(true);
     setMsg("");
     try {
       const reader = new FileReader();
@@ -151,27 +176,28 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
           body: JSON.stringify({
             sectionId: selectedSection,
             toolTab: selectedTab || null,
-            displayName: displayName || file.name,
-            mimeType: file.type,
+            displayName: displayName || pendingFile.name,
+            mimeType: pendingFile.type || "application/pdf",
             fileData: base64Data,
           }),
         });
         if (res.ok) {
           setMsg("File uploaded!");
           setDisplayName("");
-          if (fileRef.current) fileRef.current.value = "";
+          setPendingFile(null);
           await loadFiles();
         } else {
           const err = await res.json().catch(() => ({}));
           setMsg(err.error || "Upload failed.");
         }
-        setUploadingFor(null);
+        setUploading(false);
         setTimeout(() => setMsg(""), 4000);
       };
-      reader.readAsDataURL(file);
+      reader.onerror = () => { setMsg("Could not read file."); setUploading(false); };
+      reader.readAsDataURL(pendingFile);
     } catch {
       setMsg("Upload error.");
-      setUploadingFor(null);
+      setUploading(false);
     }
   };
 
@@ -180,6 +206,8 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
     const res = await fetch(`${BASE}/api/admin/files/${id}`, { method: "DELETE", credentials: "include" });
     if (res.ok) await loadFiles();
   };
+
+  const formatBytes = (b: number) => b < 1024 * 1024 ? `${(b / 1024).toFixed(0)} KB` : `${(b / (1024 * 1024)).toFixed(1)} MB`;
 
   return (
     <div className="space-y-8">
@@ -223,11 +251,58 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
             />
           </div>
         </div>
+
+        {/* Drop zone */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED}
+          className="hidden"
+          onChange={handleFileInput}
+        />
+        {!pendingFile ? (
+          <div
+            ref={dropZoneRef}
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-lg py-8 px-4 cursor-pointer transition-colors ${dragging ? "border-blue-400 bg-blue-50" : "border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50"}`}
+          >
+            <UploadCloud className="w-8 h-8 text-slate-400" />
+            <p className="text-sm text-slate-600">Drag and drop a file here</p>
+            <p className="text-sm text-slate-500">
+              or{" "}
+              <span
+                className="underline text-slate-700 cursor-pointer"
+                onClick={e => { e.stopPropagation(); fileInputRef.current?.click(); }}
+              >
+                browse to upload
+              </span>
+            </p>
+            <p className="text-xs text-slate-400 mt-1">PDF, max 10 MB</p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 border rounded-lg px-4 py-3 bg-white">
+            <FileText className="w-5 h-5 text-slate-500 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-800 truncate">{pendingFile.name}</p>
+              <p className="text-xs text-slate-400">{formatBytes(pendingFile.size)}</p>
+            </div>
+            <button
+              onClick={() => { setPendingFile(null); setDisplayName(""); setMsg(""); }}
+              className="text-slate-400 hover:text-slate-600 p-1 rounded"
+              title="Remove file"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center gap-4">
-          <input type="file" ref={fileRef} accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg" className="text-sm" />
-          <Button onClick={handleUpload} disabled={!!uploadingFor} size="sm">
+          <Button onClick={handleUpload} disabled={uploading || !pendingFile} size="sm">
             <Upload className="w-4 h-4 mr-2" />
-            {uploadingFor ? "Uploading..." : "Upload"}
+            {uploading ? "Uploading..." : "Upload"}
           </Button>
           {msg && <span className={`text-sm font-medium ${msg.includes("!") ? "text-green-600" : "text-red-600"}`}>{msg}</span>}
         </div>
