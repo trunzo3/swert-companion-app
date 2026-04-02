@@ -145,7 +145,7 @@ function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string
     if (file.size > MAX_BYTES) { setMsg("File exceeds 10 MB limit."); return; }
     setPendingFile(file);
     setMsg("");
-    if (!displayName) setDisplayName(file.name.replace(/\.[^.]+$/, ""));
+    if (!displayName) setDisplayName(file.name);
   };
 
   const handleDrop = (e: React.DragEvent) => {

@@ -376,10 +376,25 @@ router.get("/files/:id/download", async (req, res) => {
   }
 
   const buffer = Buffer.from(file.fileData, "base64");
+
+  const mimeExtMap: Record<string, string> = {
+    "application/pdf": ".pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+    "text/plain": ".txt",
+    "text/csv": ".csv",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+  };
+  const expectedExt = mimeExtMap[file.mimeType] ?? "";
+  const hasExt = expectedExt && file.displayName.toLowerCase().endsWith(expectedExt);
+  const filename = hasExt ? file.displayName : `${file.displayName}${expectedExt}`;
+
   res.setHeader("Content-Type", file.mimeType);
-  res.setHeader("Content-Disposition", `attachment; filename="${file.displayName}"`);
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
   res.setHeader("Content-Length", buffer.length);
-  res.send(buffer);
+  res.end(buffer);
 });
 
 router.get("/files/by-section/:sectionId", async (req, res) => {
