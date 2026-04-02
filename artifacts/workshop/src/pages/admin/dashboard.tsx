@@ -1,10 +1,10 @@
-import { useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { getAdminAuth, setAdminAuth } from "@/lib/auth";
-import { 
-  useGetAdminStats, 
-  useGetParticipants, 
-  useGetAdminSections, 
+import {
+  useGetAdminStats,
+  useGetParticipants,
+  useGetAdminSections,
   useUpdateSectionCode,
   useGetSafariWorksheets,
   useCreateSafariWorksheet,
@@ -17,10 +17,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Users, BookOpen, KeyRound, Map, MessageSquare, LogOut, Check, X, Trash2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Users, BookOpen, KeyRound, Map, MessageSquare, LogOut, Check, X, Trash2, Plus, Upload, FileText } from "lucide-react";
 import { format } from "date-fns";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function StatsCard({ title, value, icon: Icon }: { title: string, value: string | number, icon: any }) {
   return (
@@ -33,6 +37,252 @@ function StatsCard({ title, value, icon: Icon }: { title: string, value: string 
         <div className="text-2xl font-bold">{value}</div>
       </CardContent>
     </Card>
+  );
+}
+
+function HomeContentEditor() {
+  const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    fetch(`${BASE}/api/home-content`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { if (d.content) setContent(d.content); })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMsg("");
+    try {
+      const res = await fetch(`${BASE}/api/admin/home-content`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content }),
+      });
+      if (res.ok) {
+        setMsg("Saved successfully.");
+      } else {
+        setMsg("Save failed.");
+      }
+    } catch {
+      setMsg("Connection error.");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMsg(""), 3000);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label className="text-sm font-semibold mb-2 block">Facilitator Message (shown on participant Home page)</Label>
+        <Textarea
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          rows={8}
+          placeholder="Enter message for participants..."
+          className="font-sans text-sm"
+        />
+      </div>
+      <div className="flex items-center gap-4">
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Message"}
+        </Button>
+        {msg && <span className={`text-sm font-medium ${msg.includes("success") ? "text-green-600" : "text-red-600"}`}>{msg}</span>}
+      </div>
+      <p className="text-xs text-muted-foreground">Changes appear immediately for all participants.</p>
+    </div>
+  );
+}
+
+interface SectionFile {
+  id: number;
+  displayName: string;
+  sectionId: string;
+  toolTab: string | null;
+  mimeType: string;
+  fileSize: number;
+  uploadedAt: string;
+}
+
+function FileManagerTab({ worksheets }: { worksheets: { id: number; name: string }[] }) {
+  const [files, setFiles] = useState<SectionFile[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+  const [selectedSection, setSelectedSection] = useState("tool-safari");
+  const [selectedTab, setSelectedTab] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [msg, setMsg] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const SECTIONS_WITH_FILES = [
+    { id: "tool-safari", label: "Tool Safari" },
+    { id: "verification-test", label: "Verification Test" },
+    { id: "capstone", label: "Capstone" },
+  ];
+
+  const loadFiles = async () => {
+    setLoadingFiles(true);
+    try {
+      const res = await fetch(`${BASE}/api/files/by-section/${selectedSection}`, { credentials: "include" });
+      if (res.ok) setFiles(await res.json());
+    } catch {}
+    setLoadingFiles(false);
+  };
+
+  useEffect(() => { loadFiles(); }, [selectedSection]);
+
+  const handleUpload = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) { setMsg("Please select a file."); return; }
+    setUploadingFor(selectedTab || selectedSection);
+    setMsg("");
+    try {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64Data = (ev.target?.result as string).split(",")[1];
+        const res = await fetch(`${BASE}/api/admin/files`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            sectionId: selectedSection,
+            toolTab: selectedTab || null,
+            displayName: displayName || file.name,
+            mimeType: file.type,
+            fileData: base64Data,
+          }),
+        });
+        if (res.ok) {
+          setMsg("File uploaded!");
+          setDisplayName("");
+          if (fileRef.current) fileRef.current.value = "";
+          await loadFiles();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          setMsg(err.error || "Upload failed.");
+        }
+        setUploadingFor(null);
+        setTimeout(() => setMsg(""), 4000);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setMsg("Upload error.");
+      setUploadingFor(null);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this file?")) return;
+    const res = await fetch(`${BASE}/api/admin/files/${id}`, { method: "DELETE", credentials: "include" });
+    if (res.ok) await loadFiles();
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-slate-50 border rounded-lg p-5 space-y-4">
+        <h3 className="font-semibold text-slate-800">Upload File</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label className="text-xs mb-1 block">Section</Label>
+            <select
+              value={selectedSection}
+              onChange={e => { setSelectedSection(e.target.value); setSelectedTab(""); }}
+              className="w-full h-9 border border-input rounded-md px-3 py-1 text-sm bg-white"
+            >
+              {SECTIONS_WITH_FILES.map(s => (
+                <option key={s.id} value={s.id}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+          {selectedSection === "tool-safari" && (
+            <div>
+              <Label className="text-xs mb-1 block">Tool Tab (optional)</Label>
+              <select
+                value={selectedTab}
+                onChange={e => setSelectedTab(e.target.value)}
+                className="w-full h-9 border border-input rounded-md px-3 py-1 text-sm bg-white"
+              >
+                <option value="">— Any / General —</option>
+                {worksheets.map(w => (
+                  <option key={w.id} value={w.name}>{w.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <Label className="text-xs mb-1 block">Display Name</Label>
+            <Input
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              placeholder="e.g. ChatGPT Safari Guide"
+              className="text-sm"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <input type="file" ref={fileRef} accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg" className="text-sm" />
+          <Button onClick={handleUpload} disabled={!!uploadingFor} size="sm">
+            <Upload className="w-4 h-4 mr-2" />
+            {uploadingFor ? "Uploading..." : "Upload"}
+          </Button>
+          {msg && <span className={`text-sm font-medium ${msg.includes("!") ? "text-green-600" : "text-red-600"}`}>{msg}</span>}
+        </div>
+      </div>
+
+      <div>
+        <h3 className="font-semibold text-slate-800 mb-3">Files in "{SECTIONS_WITH_FILES.find(s=>s.id===selectedSection)?.label}"</h3>
+        {loadingFiles ? (
+          <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead>Display Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Tool Tab</TableHead>
+                  <TableHead>Uploaded</TableHead>
+                  <TableHead className="w-[80px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {files.map(f => (
+                  <TableRow key={f.id}>
+                    <TableCell className="font-medium">{f.displayName}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{(f.mimeType ?? "").split("/")[1] ?? f.mimeType}</TableCell>
+                    <TableCell>
+                      {f.toolTab ? <Badge variant="outline">{f.toolTab}</Badge> : <span className="text-muted-foreground text-xs">—</span>}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {format(new Date(f.uploadedAt), "MMM d, h:mm a")}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(f.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {files.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No files uploaded for this section yet.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -98,10 +348,12 @@ export default function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="participants" className="w-full bg-white rounded-lg shadow-sm border p-6">
-          <TabsList className="mb-6 bg-slate-100">
+          <TabsList className="mb-6 bg-slate-100 flex-wrap h-auto">
             <TabsTrigger value="participants">Participants</TabsTrigger>
             <TabsTrigger value="sections">Section Codes</TabsTrigger>
             <TabsTrigger value="worksheets">Safari Worksheets</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="home">Home Message</TabsTrigger>
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
           </TabsList>
 
@@ -150,16 +402,13 @@ export default function AdminDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sections.map(s => {
-                    // Simple inline state for local edits before saving
-                    return (
-                      <SectionRow 
-                        key={s.id} 
-                        section={s} 
-                        onSave={(code, active) => handleCodeUpdate(s.id, code, active)} 
-                      />
-                    );
-                  })}
+                  {sections.map(s => (
+                    <SectionRow
+                      key={s.id}
+                      section={s}
+                      onSave={(code, active) => handleCodeUpdate(s.id, code, active)}
+                    />
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -180,9 +429,9 @@ export default function AdminDashboard() {
                 </TableHeader>
                 <TableBody>
                   {worksheets.map(w => (
-                    <WorksheetRow 
-                      key={w.id} 
-                      worksheet={w} 
+                    <WorksheetRow
+                      key={w.id}
+                      worksheet={w}
                       onUpdate={(data) => updateWorksheet.mutate({ id: w.id, data }, { onSuccess: () => refetchWorksheets() })}
                       onDelete={() => deleteWorksheet.mutate({ id: w.id }, { onSuccess: () => refetchWorksheets() })}
                     />
@@ -195,6 +444,14 @@ export default function AdminDashboard() {
                 </TableBody>
               </Table>
             </div>
+          </TabsContent>
+
+          <TabsContent value="files">
+            <FileManagerTab worksheets={worksheets} />
+          </TabsContent>
+
+          <TabsContent value="home">
+            <HomeContentEditor />
           </TabsContent>
 
           <TabsContent value="feedback">
@@ -225,10 +482,6 @@ export default function AdminDashboard() {
   );
 }
 
-// Helper components for rows with local state
-import { useState } from "react";
-import { Plus } from "lucide-react";
-
 function SectionRow({ section, onSave }: { section: any, onSave: (c: string, a: boolean) => void }) {
   const [code, setCode] = useState(section.code);
   const [active, setActive] = useState(section.codeActive);
@@ -241,17 +494,17 @@ function SectionRow({ section, onSave }: { section: any, onSave: (c: string, a: 
         <Badge variant={section.tier === 1 ? "default" : "secondary"}>Tier {section.tier}</Badge>
       </TableCell>
       <TableCell>
-        <Input 
-          value={code} 
-          onChange={(e) => setCode(e.target.value.toUpperCase())} 
+        <Input
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
           className="w-32 uppercase"
           disabled={section.tier > 1}
         />
       </TableCell>
       <TableCell>
-        <Switch 
-          checked={active} 
-          onCheckedChange={setActive} 
+        <Switch
+          checked={active}
+          onCheckedChange={setActive}
           disabled={section.tier > 1}
         />
       </TableCell>

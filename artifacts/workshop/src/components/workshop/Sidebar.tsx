@@ -1,18 +1,30 @@
 import { cn } from "@/lib/utils";
-import { Lock, Unlock, ChevronRight } from "lucide-react";
+import { Lock, ChevronRight, Home, MapPin, LogOut } from "lucide-react";
 import { SectionWithStatus } from "@workspace/api-client-react";
+import { clearSession } from "@/lib/auth";
 
 interface SidebarProps {
   sections: SectionWithStatus[];
   activeSectionId: string | null;
   onSelectSection: (id: string) => void;
+  onNavigateHome?: () => void;
 }
 
-export function Sidebar({ sections, activeSectionId, onSelectSection }: SidebarProps) {
-  const day1Sections = sections.filter(s => s.day === 1 && s.tier === 1).sort((a, b) => a.order - b.order);
-  const day2Sections = sections.filter(s => s.day === 2 && s.tier === 1).sort((a, b) => a.order - b.order);
-  const tier2Sections = sections.filter(s => s.tier === 2).sort((a, b) => a.order - b.order);
-  const tier3Sections = sections.filter(s => s.tier === 3).sort((a, b) => a.order - b.order);
+const HIDDEN_SECTION_IDS = ["six-ways-worksheet"];
+
+export function Sidebar({ sections, activeSectionId, onSelectSection, onNavigateHome }: SidebarProps) {
+  const day1Sections = sections
+    .filter(s => s.day === 1 && s.tier === 1 && !HIDDEN_SECTION_IDS.includes(s.id))
+    .sort((a, b) => a.order - b.order);
+  const day2Sections = sections
+    .filter(s => s.day === 2 && s.tier === 1 && !HIDDEN_SECTION_IDS.includes(s.id))
+    .sort((a, b) => a.order - b.order);
+  const tier2Sections = sections
+    .filter(s => s.tier === 2 && !HIDDEN_SECTION_IDS.includes(s.id))
+    .sort((a, b) => a.order - b.order);
+  const tier3Sections = sections
+    .filter(s => s.tier === 3 && !HIDDEN_SECTION_IDS.includes(s.id))
+    .sort((a, b) => a.order - b.order);
 
   const SectionList = ({ items, title }: { items: SectionWithStatus[], title: string }) => (
     <div className="mb-6">
@@ -27,8 +39,8 @@ export function Sidebar({ sections, activeSectionId, onSelectSection }: SidebarP
             data-testid={`sidebar-item-${section.id}`}
             className={cn(
               "w-full flex items-center justify-between px-4 py-2 text-sm transition-colors text-left",
-              activeSectionId === section.id 
-                ? "bg-primary/10 text-primary font-medium border-r-2 border-primary" 
+              activeSectionId === section.id
+                ? "bg-primary/10 text-primary font-medium border-r-2 border-primary"
                 : "text-foreground hover:bg-secondary",
               !section.unlocked && "opacity-70"
             )}
@@ -48,11 +60,50 @@ export function Sidebar({ sections, activeSectionId, onSelectSection }: SidebarP
   );
 
   return (
-    <div className="w-64 border-r bg-card min-h-[calc(100vh-4rem)] py-6 overflow-y-auto hidden md:block">
-      <SectionList items={day1Sections} title="Day 1" />
-      <SectionList items={day2Sections} title="Day 2" />
-      <SectionList items={tier2Sections} title="Tier 2 (Future)" />
-      <SectionList items={tier3Sections} title="Tier 3 (Future)" />
+    <div className="w-64 border-r bg-card min-h-[calc(100vh-4rem)] py-4 overflow-y-auto hidden md:flex flex-col">
+      <div className="flex-1">
+        <div className="mb-4 px-2 space-y-1">
+          <button
+            onClick={onNavigateHome}
+            className={cn(
+              "w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
+              "text-foreground hover:bg-secondary"
+            )}
+          >
+            <Home className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span>Home</span>
+          </button>
+          <button
+            onClick={() => onSelectSection("levels")}
+            className={cn(
+              "w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
+              activeSectionId === "levels"
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-foreground hover:bg-secondary"
+            )}
+          >
+            <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <span>Where Are You on the Path?</span>
+          </button>
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <SectionList items={day1Sections} title="Day 1" />
+          <SectionList items={day2Sections} title="Day 2" />
+          {tier2Sections.length > 0 && <SectionList items={tier2Sections} title="Tier 2 (Future)" />}
+          {tier3Sections.length > 0 && <SectionList items={tier3Sections} title="Tier 3 (Future)" />}
+        </div>
+      </div>
+
+      <div className="border-t border-border px-2 pt-3 pb-2">
+        <button
+          onClick={() => { clearSession(); window.location.href = import.meta.env.BASE_URL || "/"; }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+        >
+          <LogOut className="w-4 h-4 flex-shrink-0" />
+          <span>Log out</span>
+        </button>
+      </div>
     </div>
   );
 }

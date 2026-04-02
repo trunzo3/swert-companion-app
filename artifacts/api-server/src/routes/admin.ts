@@ -8,10 +8,11 @@ import {
   workflowMapsTable,
   feedbackTable,
   safariWorksheetsTable,
+  sectionFilesTable,
+  homeContentTable,
 } from "@workspace/db/schema";
 import { eq, count, sql } from "drizzle-orm";
 import {
-  AdminLoginBody,
   UpdateSectionCodeBody,
   CreateSafariWorksheetBody,
   UpdateSafariWorksheetBody,
@@ -31,19 +32,22 @@ function requireAdmin(req: any, res: any, next: any) {
 }
 
 router.post("/admin/login", async (req, res) => {
-  const bodyResult = AdminLoginBody.safeParse(req.body);
-  if (!bodyResult.success) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
-  }
+  const { email, password } = req.body || {};
 
-  const adminPassword = process.env.ADMIN_PASSWORD || "iqmeeteq2026";
-  if (bodyResult.data.password !== adminPassword) {
-    res.status(401).json({ error: "Invalid password" });
+  const adminEmail = process.env.ADMIN_EMAIL || "anthony@iqmeeteq.com";
+  const adminPassword = process.env.ADMIN_PASSWORD || "95682";
+
+  if (email !== adminEmail || password !== adminPassword) {
+    res.status(401).json({ error: "Invalid credentials." });
     return;
   }
 
   req.session!.isAdmin = true;
+  res.json({ success: true });
+});
+
+router.post("/admin/logout", (req, res) => {
+  req.session!.isAdmin = false;
   res.json({ success: true });
 });
 
@@ -260,6 +264,140 @@ router.get("/admin/stats", requireAdmin, async (req, res) => {
     totalWorkflowMaps: Number(workflowRow.cnt),
     feedbackSubmissions: Number(feedbackRow.cnt),
   });
+});
+
+router.get("/home-content", async (req, res) => {
+  const rows = await db.select().from(homeContentTable).limit(1);
+  if (rows.length === 0) {
+    res.json({ content: "Welcome to the SWERT Summit. Enter the codes your facilitator shares to unlock each section. Your notes save automatically." });
+  } else {
+    res.json({ content: rows[0].content });
+  }
+});
+
+router.put("/admin/home-content", requireAdmin, async (req, res) => {
+  const { content } = req.body || {};
+  if (typeof content !== "string") {
+    res.status(400).json({ error: "Content is required" });
+    return;
+  }
+
+  const existing = await db.select().from(homeContentTable).limit(1);
+  let row;
+  if (existing.length === 0) {
+    [row] = await db.insert(homeContentTable).values({ content }).returning();
+  } else {
+    [row] = await db
+      .update(homeContentTable)
+      .set({ content, updatedAt: new Date() })
+      .where(eq(homeContentTable.id, existing[0].id))
+      .returning();
+  }
+  res.json({ content: row.content });
+});
+
+router.get("/admin/files", requireAdmin, async (req, res) => {
+  const files = await db
+    .select({
+      id: sectionFilesTable.id,
+      displayName: sectionFilesTable.displayName,
+      sectionId: sectionFilesTable.sectionId,
+      toolTab: sectionFilesTable.toolTab,
+      mimeType: sectionFilesTable.mimeType,
+      fileSize: sectionFilesTable.fileSize,
+      uploadedAt: sectionFilesTable.uploadedAt,
+    })
+    .from(sectionFilesTable)
+    .orderBy(sectionFilesTable.uploadedAt);
+
+  res.json(files);
+});
+
+router.post("/admin/files", requireAdmin, async (req, res) => {
+  const { displayName, sectionId, toolTab, mimeType, fileData } = req.body || {};
+
+  if (!displayName || !sectionId || !fileData) {
+    res.status(400).json({ error: "displayName, sectionId, and fileData are required" });
+    return;
+  }
+
+  const base64Data = fileData.replace(/^data:[^;]+;base64,/, "");
+  const fileSize = Math.round((base64Data.length * 3) / 4);
+
+  const [file] = await db
+    .insert(sectionFilesTable)
+    .values({
+      displayName,
+      sectionId,
+      toolTab: toolTab || null,
+      mimeType: mimeType || "application/pdf",
+      fileData: base64Data,
+      fileSize,
+    })
+    .returning({
+      id: sectionFilesTable.id,
+      displayName: sectionFilesTable.displayName,
+      sectionId: sectionFilesTable.sectionId,
+      toolTab: sectionFilesTable.toolTab,
+      mimeType: sectionFilesTable.mimeType,
+      fileSize: sectionFilesTable.fileSize,
+      uploadedAt: sectionFilesTable.uploadedAt,
+    });
+
+  res.status(201).json(file);
+});
+
+router.delete("/admin/files/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  await db.delete(sectionFilesTable).where(eq(sectionFilesTable.id, id));
+  res.json({ success: true });
+});
+
+router.get("/files/:id/download", async (req, res) => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+
+  const [file] = await db
+    .select()
+    .from(sectionFilesTable)
+    .where(eq(sectionFilesTable.id, id))
+    .limit(1);
+
+  if (!file) {
+    res.status(404).json({ error: "File not found" });
+    return;
+  }
+
+  const buffer = Buffer.from(file.fileData, "base64");
+  res.setHeader("Content-Type", file.mimeType);
+  res.setHeader("Content-Disposition", `attachment; filename="${file.displayName}"`);
+  res.setHeader("Content-Length", buffer.length);
+  res.send(buffer);
+});
+
+router.get("/files/by-section/:sectionId", async (req, res) => {
+  const { sectionId } = req.params;
+  const files = await db
+    .select({
+      id: sectionFilesTable.id,
+      displayName: sectionFilesTable.displayName,
+      sectionId: sectionFilesTable.sectionId,
+      toolTab: sectionFilesTable.toolTab,
+      mimeType: sectionFilesTable.mimeType,
+      fileSize: sectionFilesTable.fileSize,
+      uploadedAt: sectionFilesTable.uploadedAt,
+    })
+    .from(sectionFilesTable)
+    .where(eq(sectionFilesTable.sectionId, sectionId));
+
+  res.json(files);
 });
 
 export default router;

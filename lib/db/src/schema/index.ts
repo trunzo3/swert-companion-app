@@ -5,3 +5,5 @@ export * from "./notes";
 export * from "./workflow-maps";
 export * from "./feedback";
 export * from "./safari-worksheets";
+export * from "./section-files";
+export * from "./home-content";

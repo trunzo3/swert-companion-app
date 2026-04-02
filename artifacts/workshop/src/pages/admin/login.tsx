@@ -10,15 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const loginMutation = useAdminLogin();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password) return;
+    if (!email || !password) return;
 
     loginMutation.mutate(
-      { data: { password } },
+      { data: { email, password } as any },
       {
         onSuccess: () => {
           setAdminAuth(true);
@@ -28,7 +29,7 @@ export default function AdminLogin() {
           toast({
             variant: "destructive",
             title: "Access Denied",
-            description: "Incorrect password.",
+            description: "Incorrect credentials.",
           });
         }
       }
@@ -48,19 +49,31 @@ export default function AdminLogin() {
         <div className="bg-slate-900 p-8 rounded-xl shadow-lg border border-slate-800">
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300">Admin Email</label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-slate-800 border-slate-700 text-slate-100"
+                autoFocus
+                data-testid="input-admin-email"
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium text-slate-300">Admin Password</label>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-slate-800 border-slate-700 text-slate-100"
-                autoFocus
+                data-testid="input-admin-password"
               />
             </div>
             <Button
               type="submit"
               className="w-full bg-slate-100 text-slate-900 hover:bg-white"
               disabled={loginMutation.isPending}
+              data-testid="button-admin-login"
             >
               Authenticate
             </Button>

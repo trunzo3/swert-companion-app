@@ -2,6 +2,7 @@ import { SectionWithStatus } from "@workspace/api-client-react";
 import { VerificationTest, ToolSafari, RicecoFramework, DraftWithRiceco, LlmPeerReview, Distill, Prepare, Synthesize, PowerFollowUps, WhatAiIs, PersistentContext, RedYellowGreen, Capstone, OvernightAssignment, SixWaysWorksheet } from "./sections/Day1";
 import { OvernightHarvest, StatusQuoBias, CountyChangeFramework, CountyChangeMessage, Closing } from "./sections/Day2";
 import { WorkflowConfigurator } from "./sections/WorkflowConfigurator";
+import { WhereAreYouOnThePath } from "./sections/Levels";
 import { Lock } from "lucide-react";
 
 function LockedSection({ title, description, isFuture }: { title: string, description: string, isFuture: boolean }) {
@@ -20,14 +21,13 @@ function LockedSection({ title, description, isFuture }: { title: string, descri
   );
 }
 
-export function SectionRenderer({ section }: { section: SectionWithStatus }) {
-  // If locked, show locked state
-  if (!section.unlocked) {
-    return <LockedSection title={section.title} description={section.description} isFuture={section.tier > 1} />;
+export function SectionRenderer({ section }: { section: SectionWithStatus | { id: string; title: string; unlocked: true; tier: number; description: string } }) {
+  if ("unlocked" in section && !section.unlocked) {
+    return <LockedSection title={section.title} description={(section as any).description} isFuture={(section as any).tier > 1} />;
   }
 
-  // Render component based on ID
   switch (section.id) {
+    case "levels": return <WhereAreYouOnThePath />;
     case "verification-test": return <VerificationTest sectionId={section.id} />;
     case "tool-safari": return <ToolSafari sectionId={section.id} />;
     case "riceco-framework": return <RicecoFramework sectionId={section.id} />;
@@ -43,15 +43,14 @@ export function SectionRenderer({ section }: { section: SectionWithStatus }) {
     case "capstone": return <Capstone sectionId={section.id} />;
     case "overnight-assignment": return <OvernightAssignment sectionId={section.id} />;
     case "six-ways-worksheet": return <SixWaysWorksheet sectionId={section.id} />;
-    
-    // Day 2
+
     case "overnight-harvest": return <OvernightHarvest sectionId={section.id} />;
     case "workflow-configurator": return <WorkflowConfigurator sectionId={section.id} />;
     case "status-quo-bias": return <StatusQuoBias sectionId={section.id} />;
     case "county-change-framework": return <CountyChangeFramework sectionId={section.id} />;
     case "county-change-message": return <CountyChangeMessage sectionId={section.id} />;
     case "closing": return <Closing sectionId={section.id} />;
-    
+
     default:
       return (
         <div className="p-10 border-2 border-dashed rounded-lg text-center">

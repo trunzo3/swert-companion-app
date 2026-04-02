@@ -8,7 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea";
 import { useSaveFeedback } from "@workspace/api-client-react";
 
-export function TopNav() {
+interface TopNavProps {
+  onLogoClick?: () => void;
+}
+
+export function TopNav({ onLogoClick }: TopNavProps) {
   const [code, setCode] = useState("");
   const unlockMutation = useUnlockSection();
   const { toast } = useToast();
@@ -66,7 +70,9 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4">
-        <Logo />
+        <div className={onLogoClick ? "cursor-pointer" : ""} onClick={onLogoClick}>
+          <Logo />
+        </div>
         
         <div className="flex items-center gap-6">
           <form onSubmit={handleUnlock} className="hidden md:flex items-center gap-2">
