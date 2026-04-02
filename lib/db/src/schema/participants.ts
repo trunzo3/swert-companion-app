@@ -7,6 +7,7 @@ export const participantsTable = pgTable("participants", {
   email: text("email").notNull().unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastLoginAt: timestamp("last_login_at").defaultNow().notNull(),
+  active: boolean("active").default(true).notNull(),
 });
 
 export const insertParticipantSchema = createInsertSchema(participantsTable).omit({ id: true, createdAt: true, lastLoginAt: true });

@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Users, BookOpen, KeyRound, Map, MessageSquare, LogOut, Check, X, Trash2, Plus, Upload, FileText, UploadCloud } from "lucide-react";
+import { Users, BookOpen, KeyRound, Map, MessageSquare, LogOut, Check, X, Trash2, Plus, Upload, FileText, UploadCloud, ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -399,6 +399,130 @@ function SafariGuidesTab() {
   );
 }
 
+type ParticipantSortKey = "email-asc" | "email-desc" | "created-desc" | "created-asc" | "active-first" | "inactive-first";
+
+
+function ParticipantsTab({ participants: initialParticipants, refetch }: { participants: any[]; refetch: () => void }) {
+  const [sort, setSort] = useState<ParticipantSortKey>("created-desc");
+  const [participants, setParticipants] = useState<any[]>(initialParticipants);
+
+  useEffect(() => { setParticipants(initialParticipants); }, [initialParticipants]);
+
+  const sorted = [...participants].sort((a, b) => {
+    if (sort === "email-asc") return a.email.localeCompare(b.email);
+    if (sort === "email-desc") return b.email.localeCompare(a.email);
+    if (sort === "created-desc") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    if (sort === "created-asc") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    if (sort === "active-first") return (b.active ? 1 : 0) - (a.active ? 1 : 0);
+    if (sort === "inactive-first") return (a.active ? 1 : 0) - (b.active ? 1 : 0);
+    return 0;
+  });
+
+  const toggleActive = async (p: any) => {
+    const newActive = !p.active;
+    setParticipants(prev => prev.map(x => x.id === p.id ? { ...x, active: newActive } : x));
+    try {
+      await fetch(`${BASE}/api/admin/participants/${p.id}/active`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ active: newActive }),
+      });
+    } catch {
+      setParticipants(prev => prev.map(x => x.id === p.id ? { ...x, active: p.active } : x));
+    }
+    refetch();
+  };
+
+  const cycleSortForColumn = (col: "email" | "created" | "status") => {
+    if (col === "email") setSort(sort === "email-asc" ? "email-desc" : "email-asc");
+    if (col === "created") setSort(sort === "created-desc" ? "created-asc" : "created-desc");
+    if (col === "status") setSort(sort === "active-first" ? "inactive-first" : "active-first");
+  };
+
+  const sortIcon = (col: "email" | "created" | "status") => {
+    const map: Record<string, ParticipantSortKey[]> = {
+      email: ["email-asc", "email-desc"],
+      created: ["created-desc", "created-asc"],
+      status: ["active-first", "inactive-first"],
+    };
+    if (!map[col].includes(sort)) return <ChevronsUpDown className="w-3 h-3 text-muted-foreground/40 inline-block ml-1" />;
+    const asc = sort === "email-asc" || sort === "created-asc" || sort === "inactive-first";
+    return asc
+      ? <ChevronUp className="w-3 h-3 text-primary inline-block ml-1" />
+      : <ChevronDown className="w-3 h-3 text-primary inline-block ml-1" />;
+  };
+
+  return (
+    <div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-slate-50">
+              <TableHead>
+                <button className="flex items-center gap-0.5 font-medium hover:text-foreground" onClick={() => cycleSortForColumn("email")}>
+                  Email {sortIcon("email")}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button className="flex items-center gap-0.5 font-medium hover:text-foreground" onClick={() => cycleSortForColumn("created")}>
+                  Joined {sortIcon("created")}
+                </button>
+              </TableHead>
+              <TableHead>Last Active</TableHead>
+              <TableHead className="text-center">Sections</TableHead>
+              <TableHead className="text-center">Notes</TableHead>
+              <TableHead className="text-center">Workflows</TableHead>
+              <TableHead>
+                <button className="flex items-center gap-0.5 font-medium hover:text-foreground" onClick={() => cycleSortForColumn("status")}>
+                  Status {sortIcon("status")}
+                </button>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sorted.map(p => (
+              <TableRow key={p.id} className={!p.active ? "opacity-50" : ""}>
+                <TableCell className="font-medium">
+                  <span className={!p.active ? "text-muted-foreground" : ""}>{p.email}</span>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {format(new Date(p.createdAt), "MMM d, yyyy")}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {format(new Date(p.lastLoginAt), "MMM d, h:mm a")}
+                </TableCell>
+                <TableCell className="text-center">{p.sectionsOpened}</TableCell>
+                <TableCell className="text-center">
+                  {p.hasNotes ? <Check className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-slate-300 mx-auto" />}
+                </TableCell>
+                <TableCell className="text-center">
+                  {p.hasWorkflowMaps ? <Check className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-slate-300 mx-auto" />}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={p.active}
+                      onCheckedChange={() => toggleActive(p)}
+                      className="scale-75"
+                    />
+                    {!p.active && <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">Deactivated</Badge>}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {sorted.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No participants yet</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
 type SortKey = "date-desc" | "date-asc" | "email-asc";
 
 function FeedbackTab({ feedback }: { feedback: any[] }) {
@@ -458,7 +582,7 @@ export default function AdminDashboard() {
   }, [setLocation]);
 
   const { data: stats } = useGetAdminStats({ query: { refetchInterval: 10000 } });
-  const { data: participants = [] } = useGetParticipants();
+  const { data: participants = [], refetch: refetchParticipants } = useGetParticipants();
   const { data: sections = [], refetch: refetchSections } = useGetAdminSections();
   const { data: feedback = [] } = useGetAdminFeedback();
 
@@ -508,35 +632,7 @@ export default function AdminDashboard() {
           </TabsList>
 
           <TabsContent value="participants">
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50">
-                    <TableHead>Email</TableHead>
-                    <TableHead>Last Active</TableHead>
-                    <TableHead className="text-center">Sections</TableHead>
-                    <TableHead className="text-center">Has Notes</TableHead>
-                    <TableHead className="text-center">Has Workflows</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {participants.map(p => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.email}</TableCell>
-                      <TableCell>{format(new Date(p.lastLoginAt), "MMM d, h:mm a")}</TableCell>
-                      <TableCell className="text-center">{p.sectionsOpened}</TableCell>
-                      <TableCell className="text-center">{p.hasNotes ? <Check className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-slate-300 mx-auto" />}</TableCell>
-                      <TableCell className="text-center">{p.hasWorkflowMaps ? <Check className="w-4 h-4 text-green-600 mx-auto" /> : <X className="w-4 h-4 text-slate-300 mx-auto" />}</TableCell>
-                    </TableRow>
-                  ))}
-                  {participants.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No participants yet</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <ParticipantsTab participants={participants} refetch={refetchParticipants} />
           </TabsContent>
 
           <TabsContent value="sections">

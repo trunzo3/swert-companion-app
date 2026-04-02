@@ -74,20 +74,6 @@ export default function Workshop() {
             )}
           </div>
 
-          <footer className="mt-32 pt-8 border-t flex justify-center text-muted-foreground">
-            <button
-              onClick={() => setLocation('/admin/login')}
-              className="opacity-10 hover:opacity-40 transition-opacity p-2"
-              data-testid="footer-brand-icon"
-              title=""
-              aria-label=""
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <rect width="24" height="24" rx="4" className="fill-current" />
-                <path d="M6 12 Q12 6 18 12 Q12 18 6 12" fill="none" stroke="#C8963E" strokeWidth="2"/>
-              </svg>
-            </button>
-          </footer>
         </main>
       </div>
     </div>

@@ -79,8 +79,9 @@ router.get("/admin/participants", requireAdmin, async (req, res) => {
       return {
         id: p.id,
         email: p.email,
-        lastLoginAt: p.lastLoginAt,
         createdAt: p.createdAt,
+        lastLoginAt: p.lastLoginAt,
+        active: p.active,
         sectionsOpened: Number(sectionsRow.cnt),
         hasNotes: Number(notesRow.cnt) > 0,
         hasWorkflowMaps: Number(workflowRow.cnt) > 0,
@@ -90,6 +91,20 @@ router.get("/admin/participants", requireAdmin, async (req, res) => {
   );
 
   res.json(engagementData);
+});
+
+router.patch("/admin/participants/:id/active", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) { res.status(400).json({ error: "Invalid id" }); return; }
+  const { active } = req.body;
+  if (typeof active !== "boolean") { res.status(400).json({ error: "active must be boolean" }); return; }
+  const [updated] = await db
+    .update(participantsTable)
+    .set({ active })
+    .where(eq(participantsTable.id, id))
+    .returning();
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(updated);
 });
 
 router.get("/admin/sections", requireAdmin, async (req, res) => {
