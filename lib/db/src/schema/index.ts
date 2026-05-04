@@ -7,4 +7,3 @@ export * from "./feedback";
 export * from "./safari-worksheets";
 export * from "./section-files";
 export * from "./home-content";
-export * from "./content-variants";
