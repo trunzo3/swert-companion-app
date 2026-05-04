@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { SectionHeader, GoalBox, InsightBox, RuleBox, DepthQuote } from "../SectionHeader";
 import { NotesField } from "../NotesField";
 import { useGetSafariWorksheets } from "@workspace/api-client-react";
@@ -56,6 +56,51 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
     >
       {copied ? "✓ Copied!" : `📋 ${label}`}
     </button>
+  );
+}
+
+function RicecoCopyWorkspace({ sectionId, fieldKeyPrefix, rows }: {
+  sectionId: string;
+  fieldKeyPrefix: string;
+  rows: { l: string; name: string; desc: string }[];
+}) {
+  const copyLabels = ["Role", "Instructions", "Context", "Examples", "Constraints", "Output Format"];
+  const wsRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyAll = useCallback(() => {
+    const textareas = wsRef.current?.querySelectorAll("textarea");
+    if (!textareas) return;
+    const parts: string[] = [];
+    textareas.forEach((ta, i) => {
+      const v = ta.value.trim();
+      if (v) parts.push(`${copyLabels[i]}: ${v}`);
+    });
+    const text = parts.join("\n");
+    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  }, []);
+
+  return (
+    <div ref={wsRef} className="space-y-6 bg-card p-6 rounded-lg border">
+      {rows.map((r, i) => (
+        <div key={i}>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-full bg-[#C8963E] text-white font-bold flex items-center justify-center flex-shrink-0 text-lg">{r.l}</div>
+            <span className="font-bold text-[15px] text-primary">{r.name}</span>
+            <span className="text-[13px] text-muted-foreground">— {r.desc}</span>
+          </div>
+          <NotesField sectionId={sectionId} fieldKey={`${fieldKeyPrefix}${i}`} label="" className="[&_label]:hidden" placeholder={`Enter ${r.name.toLowerCase()}...`} />
+        </div>
+      ))}
+      <div className="flex justify-center pt-2">
+        <button
+          onClick={handleCopyAll}
+          className="inline-flex items-center gap-2 bg-[#1A2744] text-white px-8 py-3 rounded-lg text-sm font-semibold hover:bg-[#1A2744]/90 transition-colors"
+        >
+          📋 {copied ? "Copied!" : "Copy Full Prompt"}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -291,11 +336,7 @@ export function RicecoFramework({ sectionId }: { sectionId: string }) {
 
       <div className="mt-12">
         <h3 className="text-2xl font-serif font-bold text-primary mb-6">Practice Prompt Builder</h3>
-        <div className="space-y-6 bg-card p-6 rounded-lg border">
-          {rows.map(r => (
-            <NotesField key={r.name} sectionId={sectionId} fieldKey={`riceco-${r.l}`} label={r.name} placeholder={`Enter ${r.name.toLowerCase()}...`} />
-          ))}
-        </div>
+        <RicecoCopyWorkspace sectionId={sectionId} fieldKeyPrefix="riceco-" rows={rows} />
       </div>
 
       <div className="mt-8">
@@ -306,6 +347,30 @@ export function RicecoFramework({ sectionId }: { sectionId: string }) {
 }
 
 export function DraftWithRiceco({ sectionId }: { sectionId: string }) {
+  const draftRows = [
+    { l: "R", name: "Role", desc: "Who is the AI acting as?" },
+    { l: "I", name: "Instruction", desc: "What exactly do you want it to do?" },
+    { l: "C", name: "Context", desc: "What background information is needed?" },
+    { l: "E", name: "Examples", desc: "What does good look like?" },
+    { l: "C", name: "Constraints", desc: "What rules must it follow?" },
+    { l: "O", name: "Output", desc: "How should the final result be formatted?" },
+  ];
+  const copyLabels = ["Role", "Instructions", "Context", "Examples", "Constraints", "Output Format"];
+  const wsRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyAll = useCallback(() => {
+    const textareas = wsRef.current?.querySelectorAll("textarea");
+    if (!textareas) return;
+    const parts: string[] = [];
+    textareas.forEach((ta, i) => {
+      const v = ta.value.trim();
+      if (v) parts.push(`${copyLabels[i]}: ${v}`);
+    });
+    const text = parts.join("\n");
+    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  }, []);
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <SectionHeader title="Draft with RICECO" type="exercise" />
@@ -325,9 +390,26 @@ export function DraftWithRiceco({ sectionId }: { sectionId: string }) {
 
         <div className="p-6 border rounded-lg bg-secondary/10 space-y-6 mt-8">
           <h4 className="font-bold text-primary uppercase tracking-wider text-sm mb-4">Drafting Workspace</h4>
-          {(["Role", "Instruction", "Context", "Examples", "Constraints", "Output"] as const).map((name, i) => (
-            <NotesField key={name} sectionId={sectionId} fieldKey={`draft-riceco-${i}`} label={`${["R","I","C","E","C","O"][i]}: ${name}`} />
-          ))}
+          <div ref={wsRef} className="space-y-6">
+            {draftRows.map((r, i) => (
+              <div key={i}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-[#C8963E] text-white font-bold flex items-center justify-center flex-shrink-0 text-lg">{r.l}</div>
+                  <span className="font-bold text-[15px] text-primary">{r.name}</span>
+                  <span className="text-[13px] text-muted-foreground">— {r.desc}</span>
+                </div>
+                <NotesField sectionId={sectionId} fieldKey={`draft-riceco-${i}`} label="" className="[&_label]:hidden" />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-center pt-2">
+            <button
+              onClick={handleCopyAll}
+              className="inline-flex items-center gap-2 bg-[#1A2744] text-white px-8 py-3 rounded-lg text-sm font-semibold hover:bg-[#1A2744]/90 transition-colors"
+            >
+              📋 {copied ? "Copied!" : "Copy Full Prompt"}
+            </button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mt-8">
@@ -405,7 +487,7 @@ export function Distill({ sectionId }: { sectionId: string }) {
       <SectionHeader title="Distill" type="exercise" />
       <GoalBox text="Turn something complex into something clear." />
 
-      <div className="bg-card p-6 border rounded-lg mb-8 shadow-sm">
+      <div className="bg-card p-6 border rounded-lg mb-8 shadow-sm relative">
         <h3 className="font-bold text-primary mb-3">RICECO Scaffold</h3>
         <p className="text-foreground font-mono text-sm bg-secondary/50 p-4 rounded">
           <strong className="text-primary">I:</strong> Summarize the attached document.<br/>
@@ -413,6 +495,9 @@ export function Distill({ sectionId }: { sectionId: string }) {
           <strong className="text-primary">C:</strong> Keep it under 300 words. No jargon.<br/>
           <strong className="text-primary">O:</strong> 3 bullet points of key takeaways, 1 paragraph summary.
         </p>
+        <div className="absolute top-4 right-4">
+          <CopyButton text={"I: Summarize the attached document.\nC: The audience is busy executives who need the bottom line.\nC: Keep it under 300 words. No jargon.\nO: 3 bullet points of key takeaways, 1 paragraph summary."} label="Copy Scaffold" />
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -434,7 +519,7 @@ export function Prepare({ sectionId }: { sectionId: string }) {
       <SectionHeader title="Prepare" type="exercise" />
       <GoalBox text="Get ready for a high-stakes conversation before it happens." />
 
-      <div className="bg-card p-6 border rounded-lg mb-6 shadow-sm">
+      <div className="bg-card p-6 border rounded-lg mb-6 shadow-sm relative">
         <h3 className="font-bold text-primary mb-3">RICECO Scaffold</h3>
         <p className="text-foreground font-mono text-sm bg-secondary/50 p-4 rounded">
           <strong className="text-primary">R:</strong> You are a skeptical community member.<br/>
@@ -443,6 +528,9 @@ export function Prepare({ sectionId }: { sectionId: string }) {
           <strong className="text-primary">C:</strong> Push back on my points. Ask one question at a time.<br/>
           <strong className="text-primary">O:</strong> Dialogue format. Wait for my response before replying.
         </p>
+        <div className="absolute top-4 right-4">
+          <CopyButton text={"R: You are a skeptical community member.\nI: Roleplay a conversation with me about [Topic].\nC: We are at a town hall. I am presenting a new policy.\nC: Push back on my points. Ask one question at a time.\nO: Dialogue format. Wait for my response before replying."} label="Copy Scaffold" />
+        </div>
       </div>
 
       <div className="border-l-4 border-accent pl-4 py-3 my-8 bg-card rounded-r-lg">
@@ -468,7 +556,7 @@ export function Synthesize({ sectionId }: { sectionId: string }) {
       <SectionHeader title="Synthesize" type="exercise" />
       <GoalBox text="Find patterns across multiple documents." />
 
-      <div className="bg-card p-6 border rounded-lg mb-8 shadow-sm">
+      <div className="bg-card p-6 border rounded-lg mb-8 shadow-sm relative">
         <h3 className="font-bold text-primary mb-3">Steps & Scaffold</h3>
         <p className="text-foreground font-mono text-sm bg-secondary/50 p-4 rounded">
           <strong className="text-primary">I:</strong> Review the attached reports and identify common themes.<br/>
@@ -476,6 +564,9 @@ export function Synthesize({ sectionId }: { sectionId: string }) {
           <strong className="text-primary">C:</strong> Cite which document each point comes from.<br/>
           <strong className="text-primary">O:</strong> A thematic summary table.
         </p>
+        <div className="absolute top-4 right-4">
+          <CopyButton text={"I: Review the attached reports and identify common themes.\nC: Focus on recurring challenges and proposed solutions.\nC: Cite which document each point comes from.\nO: A thematic summary table."} label="Copy Scaffold" />
+        </div>
       </div>
 
       <div className="space-y-6">
@@ -590,11 +681,11 @@ export function WhatAiIs({ sectionId }: { sectionId: string }) {
 }
 
 export function PersistentContext({ sectionId }: { sectionId: string }) {
-  const levels = [
-    { l: "L1", name: "Custom Instructions", desc: "Basic rules applied to every chat." },
-    { l: "L2", name: "Projects / Spaces", desc: "Scoped context for specific workflows." },
-    { l: "L3", name: "Custom GPTs", desc: "Shareable, specialized bots with specific knowledge." },
-    { l: "RAG", name: "NotebookLM", desc: "Retrieval-Augmented Generation. Highest accuracy on specific docs." }
+  const tools = [
+    { name: "Custom Instructions", desc: "Basic rules applied to every chat." },
+    { name: "Projects / Spaces", desc: "Scoped context for specific workflows." },
+    { name: "Custom GPTs", desc: "Shareable, specialized bots with specific knowledge." },
+    { name: "NotebookLM", desc: "Retrieval-Augmented Generation. Highest accuracy on specific docs." }
   ];
 
   return (
@@ -610,17 +701,15 @@ export function PersistentContext({ sectionId }: { sectionId: string }) {
         <table className="w-full border-collapse bg-card rounded-lg overflow-hidden shadow-sm">
           <thead>
             <tr className="bg-primary text-white text-left">
-              <th className="p-4 font-semibold w-24">Level</th>
               <th className="p-4 font-semibold">Tool Type</th>
               <th className="p-4 font-semibold">Description</th>
             </tr>
           </thead>
           <tbody>
-            {levels.map((lvl, i) => (
-              <tr key={lvl.l} className={i % 2 === 0 ? "bg-card" : "bg-secondary/30"}>
-                <td className="p-4 border-b font-bold text-accent">{lvl.l}</td>
-                <td className="p-4 border-b font-semibold text-primary">{lvl.name}</td>
-                <td className="p-4 border-b text-foreground">{lvl.desc}</td>
+            {tools.map((tool, i) => (
+              <tr key={tool.name} className={i % 2 === 0 ? "bg-card" : "bg-secondary/30"}>
+                <td className="p-4 border-b font-semibold text-primary">{tool.name}</td>
+                <td className="p-4 border-b text-foreground">{tool.desc}</td>
               </tr>
             ))}
           </tbody>
@@ -651,20 +740,22 @@ export function RedYellowGreen({ sectionId }: { sectionId: string }) {
       </div>
 
       <div className="grid md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-card border-t-4 border-green-500 p-4 rounded-b-lg shadow-sm">
-          <NotesField sectionId={sectionId} fieldKey="safe" label="Relatively Safe" className="mt-0" />
+        <div className="bg-card border-t-4 border-[#dc2626] p-4 rounded-b-lg shadow-sm">
+          <NotesField sectionId={sectionId} fieldKey="red" label="RED" className="mt-0" />
         </div>
-        <div className="bg-card border-t-4 border-yellow-500 p-4 rounded-b-lg shadow-sm">
-          <NotesField sectionId={sectionId} fieldKey="depends" label="It Depends" className="mt-0" />
+        <div className="bg-card border-t-4 border-[#C8963E] p-4 rounded-b-lg shadow-sm">
+          <NotesField sectionId={sectionId} fieldKey="yellow" label="YELLOW" className="mt-0" />
         </div>
-        <div className="bg-card border-t-4 border-red-500 p-4 rounded-b-lg shadow-sm">
-          <NotesField sectionId={sectionId} fieldKey="risky" label="Risky" className="mt-0" />
+        <div className="bg-card border-t-4 border-[#16a34a] p-4 rounded-b-lg shadow-sm">
+          <NotesField sectionId={sectionId} fieldKey="green" label="GREEN" className="mt-0" />
         </div>
       </div>
 
       <div className="mb-8">
         <NotesField sectionId={sectionId} fieldKey="condition" label="The condition that moves something from yellow to green for me" />
       </div>
+
+      <NotesField sectionId={sectionId} fieldKey="notes" label="Your Notes" />
 
       <DepthQuote>Context dictates risk. What is safe internally may be dangerous externally.</DepthQuote>
     </div>
@@ -793,6 +884,10 @@ export function Capstone({ sectionId }: { sectionId: string }) {
       </div>
 
       <DepthQuote>Building something once is a skill. Building something you can reuse and hand to your team is a system.</DepthQuote>
+
+      <div className="mt-8">
+        <NotesField sectionId={sectionId} fieldKey="notes" label="Your Notes" />
+      </div>
     </div>
   );
 }

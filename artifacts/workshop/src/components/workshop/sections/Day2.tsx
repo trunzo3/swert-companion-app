@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useGetNotesBySection } from "@workspace/api-client-react";
 import { SectionHeader, GoalBox, InsightBox, RuleBox, DepthQuote } from "../SectionHeader";
 import { NotesField } from "../NotesField";
@@ -168,7 +169,27 @@ export function CountyChangeMessage({ sectionId }: { sectionId: string }) {
   );
 }
 
+const VARIANT_DEFAULTS: Record<string, string> = {
+  "closing-quote": "Small things.\nUnlikely places.\nExtraordinary work.",
+  "closing-tagline": "You don't have to be first, but you have to be ready.",
+  "closing-survey-url": "https://headandheartca.com/close",
+  "closing-survey-label": "Complete Workshop Survey",
+};
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export function Closing({ sectionId }: { sectionId: string }) {
+  const [variants, setVariants] = useState<Record<string, string>>(VARIANT_DEFAULTS);
+
+  useEffect(() => {
+    fetch(`${BASE}/api/content-variants`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { if (d && typeof d === "object") setVariants(prev => ({ ...prev, ...d })); })
+      .catch(() => {});
+  }, []);
+
+  const quoteLines = (variants["closing-quote"] || "").split("\n");
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <SectionHeader title="Closing" type="reference" />
@@ -176,10 +197,12 @@ export function Closing({ sectionId }: { sectionId: string }) {
       <div className="py-12 px-6 bg-primary text-white rounded-lg text-center shadow-lg my-12 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-accent"></div>
         <p className="font-serif text-2xl md:text-3xl leading-relaxed font-bold">
-          "Small things.<br/>Unlikely places.<br/>Extraordinary work."
+          &ldquo;{quoteLines.map((line, i) => (
+            <span key={i}>{line}{i < quoteLines.length - 1 && <br/>}</span>
+          ))}&rdquo;
         </p>
         <div className="mt-8 text-primary-foreground/80 italic font-medium">
-          You don't have to be first, but you have to be ready.
+          {variants["closing-tagline"]}
         </div>
       </div>
 
@@ -190,8 +213,8 @@ export function Closing({ sectionId }: { sectionId: string }) {
 
       <div className="flex justify-center pt-8 border-t">
         <Button size="lg" className="h-14 px-8 text-lg font-bold shadow-md hover:shadow-lg transition-shadow" asChild>
-          <a href="https://headandheartca.com/close" target="_blank" rel="noopener noreferrer">
-            Complete Workshop Survey
+          <a href={variants["closing-survey-url"]} target="_blank" rel="noopener noreferrer">
+            {variants["closing-survey-label"]}
           </a>
         </Button>
       </div>

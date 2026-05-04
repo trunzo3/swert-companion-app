@@ -103,6 +103,7 @@ artifacts-monorepo/
 - `safari_worksheets` — name, sortOrder, active
 - `section_files` — displayName, sectionId, toolTab, mimeType, fileData (base64), fileSize, uploadedAt
 - `home_content` — content (single-row facilitator message)
+- `content_variants` — slotKey (unique), content, updatedAt (admin-editable text slots for Closing section)
 
 ## API Endpoints
 
@@ -131,6 +132,8 @@ artifacts-monorepo/
 - `DELETE /api/admin/safari-worksheets/:id` — delete worksheet
 - `GET /api/admin/feedback` — all participant feedback
 - `GET /api/admin/stats` — aggregate engagement statistics
+- `GET /api/content-variants` — get all content variant slots with defaults (public)
+- `PUT /api/admin/content-variants` — update a content variant slot (admin, body: slotKey + content)
 - `PUT /api/admin/home-content` — update facilitator home page message
 - `POST /api/admin/files` — upload a file (base64 in JSON body: displayName, sectionId, toolTab, mimeType, fileData)
 - `DELETE /api/admin/files/:id` — delete a file
@@ -158,3 +161,10 @@ artifacts-monorepo/
 - Logo click in TopNav navigates to /home when onLogoClick prop provided
 - File uploads stored as base64 text in PostgreSQL; max recommended ~5MB per file
 - NotesField accepts `minHeight` and optional `label` (empty string hides label)
+- Seed script only inserts new section_codes rows; never overwrites existing admin-edited codes
+- DraftWithRiceco and RicecoFramework use gold circle headers (40px, #C8963E) + "Copy Full Prompt" button (reads textarea values from DOM)
+- RedYellowGreen uses labels RED/YELLOW/GREEN with colors #dc2626/#C8963E/#16a34a and fieldKeys red/yellow/green
+- PersistentContext table shows only Tool Type + Description columns (Level column removed)
+- Distill/Prepare/Synthesize scaffold boxes have "Copy Scaffold" buttons
+- Capstone has a "Your Notes" general notes field at the bottom
+- Content variants system: VARIANT_SLOTS constant in content-variants route defines editable Closing section text slots (closing-quote, closing-tagline, closing-survey-url, closing-survey-label)

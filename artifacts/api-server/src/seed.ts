@@ -19,7 +19,6 @@ export async function seedDatabase(): Promise<void> {
   const existingMap = new Map(existing.map((r) => [r.sectionId, r]));
 
   let inserted = 0;
-  let updated = 0;
 
   for (const entry of SECTION_CODE_CONFIG) {
     for (const sectionId of entry.sectionIds) {
@@ -32,15 +31,9 @@ export async function seedDatabase(): Promise<void> {
           codeActive: true,
         });
         inserted++;
-      } else if (current.code !== entry.code || !current.codeActive) {
-        await db
-          .update(sectionCodesTable)
-          .set({ code: entry.code, codeActive: true })
-          .where(eq(sectionCodesTable.sectionId, sectionId));
-        updated++;
       }
     }
   }
 
-  logger.info({ inserted, updated }, "Database seed complete");
+  logger.info({ inserted }, "Database seed complete");
 }
